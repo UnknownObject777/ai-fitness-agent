@@ -1,0 +1,458 @@
+
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+.root{font-family:var(--font-sans);padding:1rem 0;}
+.tabs{display:flex;gap:6px;margin-bottom:20px;flex-wrap:wrap;}
+.tab-btn{font-size:12px;padding:6px 14px;border-radius:20px;border:0.5px solid var(--color-border-secondary);background:none;color:var(--color-text-secondary);cursor:pointer;transition:all .15s;}
+.tab-btn.active{background:#7F77DD;color:#EEEDFE;border-color:#7F77DD;}
+.section-title{font-size:11px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.layout{display:flex;gap:28px;align-items:flex-start;flex-wrap:wrap;}
+.phones{display:flex;gap:16px;flex-wrap:wrap;}
+.phone-wrap{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.phone-lbl{font-size:11px;color:var(--color-text-secondary);font-weight:500;}
+.phone{width:200px;height:400px;border:1.5px solid var(--color-border-secondary);border-radius:26px;overflow:hidden;display:flex;flex-direction:column;background:var(--color-background-primary);}
+.phone.highlight{border-color:#7F77DD;border-width:2px;}
+.sb{height:18px;background:var(--color-background-secondary);display:flex;align-items:center;justify-content:space-between;padding:0 12px;flex-shrink:0;}
+.sb span{font-size:8px;color:var(--color-text-secondary);}
+.scr{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:40px;padding:0 12px;display:flex;align-items:center;justify-content:space-between;border-bottom:.5px solid var(--color-border-tertiary);flex-shrink:0;}
+.topbar-t{font-size:12px;font-weight:500;color:var(--color-text-primary);}
+.topbar-a{font-size:10px;color:#7F77DD;}
+.scroll{flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:6px;overflow:hidden;}
+.bnav{height:50px;border-top:.5px solid var(--color-border-tertiary);display:flex;align-items:center;background:var(--color-background-primary);flex-shrink:0;padding:0 2px;}
+.ni{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:4px 0;}
+.ni-icon{font-size:14px;}
+.ni-lbl{font-size:8px;color:var(--color-text-secondary);}
+.ni.active .ni-lbl{color:#7F77DD;font-weight:500;}
+.card{background:var(--color-background-secondary);border:.5px solid var(--color-border-tertiary);border-radius:8px;padding:8px 10px;}
+.chip{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:10px;cursor:pointer;border:.5px solid var(--color-border-secondary);color:var(--color-text-secondary);background:var(--color-background-primary);white-space:nowrap;}
+.chip.purple{background:#EEEDFE;color:#3C3489;border-color:#AFA9EC;}
+.chip.teal{background:#E1F5EE;color:#085041;border-color:#5DCAA5;}
+.bubble{max-width:80%;padding:7px 10px;border-radius:12px;font-size:10px;line-height:1.5;}
+.bubble.ai{background:#EEEDFE;color:#3C3489;border-radius:4px 12px 12px 12px;align-self:flex-start;}
+.bubble.user{background:#7F77DD;color:#EEEDFE;border-radius:12px 4px 12px 12px;align-self:flex-end;}
+.bubble.system{background:var(--color-background-secondary);color:var(--color-text-secondary);border:.5px solid var(--color-border-tertiary);border-radius:8px;align-self:center;font-size:9px;max-width:90%;text-align:center;}
+.ai-card{background:#EEEDFE;border:.5px solid #AFA9EC;border-radius:4px 10px 10px 10px;padding:8px 10px;align-self:flex-start;max-width:88%;}
+.ai-card-title{font-size:10px;font-weight:500;color:#3C3489;margin-bottom:5px;}
+.ai-card-row{display:flex;gap:5px;flex-wrap:wrap;}
+.mini-metric{background:white;border:.5px solid #AFA9EC;border-radius:6px;padding:4px 8px;text-align:center;}
+.mini-metric .val{font-size:13px;font-weight:500;color:#534AB7;}
+.mini-metric .lbl{font-size:8px;color:#7F77DD;}
+.prog-bg{height:5px;background:rgba(127,119,221,.2);border-radius:3px;overflow:hidden;margin-top:4px;}
+.prog-fill{height:100%;border-radius:3px;background:#7F77DD;}
+.input-row{display:flex;gap:5px;padding:6px 8px;border-top:.5px solid var(--color-border-tertiary);flex-shrink:0;align-items:center;}
+.fake-input{flex:1;height:28px;background:var(--color-background-secondary);border:.5px solid var(--color-border-secondary);border-radius:14px;display:flex;align-items:center;padding:0 10px;}
+.fake-input span{font-size:9px;color:var(--color-text-secondary);}
+.send-btn{width:28px;height:28px;border-radius:50%;background:#7F77DD;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.send-btn span{color:white;font-size:12px;}
+.fab{width:28px;height:28px;border-radius:50%;background:#7F77DD;display:flex;align-items:center;justify-content:center;color:white;font-size:16px;font-weight:300;flex-shrink:0;}
+.list-row{display:flex;align-items:center;gap:7px;padding:6px 8px;background:var(--color-background-secondary);border:.5px solid var(--color-border-tertiary);border-radius:8px;}
+.list-ic{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+.list-t{font-size:10px;font-weight:500;color:var(--color-text-primary);}
+.list-m{font-size:8px;color:var(--color-text-secondary);}
+.badge{font-size:8px;padding:2px 6px;border-radius:4px;font-weight:500;}
+.info-panel{flex:1;min-width:260px;display:flex;flex-direction:column;gap:14px;}
+.icard{background:var(--color-background-primary);border:.5px solid var(--color-border-tertiary);border-radius:12px;padding:1rem 1.1rem;}
+.icard h3{font-size:13px;font-weight:500;color:var(--color-text-primary);margin-bottom:10px;display:flex;align-items:center;gap:6px;}
+.cdot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.icard p{font-size:12px;color:var(--color-text-secondary);line-height:1.6;margin-bottom:10px;}
+.ul{list-style:none;display:flex;flex-direction:column;gap:5px;}
+.ul li{font-size:12px;color:var(--color-text-secondary);padding-left:11px;position:relative;line-height:1.5;}
+.ul li::before{content:'';position:absolute;left:0;top:6px;width:4px;height:4px;border-radius:50%;background:var(--color-border-secondary);}
+.ul li strong{color:var(--color-text-primary);font-weight:500;}
+.tags{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px;}
+.tag{font-size:10px;padding:3px 9px;border-radius:14px;border:.5px solid var(--color-border-secondary);color:var(--color-text-secondary);}
+.tag.p{background:#EEEDFE;color:#3C3489;border-color:#AFA9EC;}
+.tag.t{background:#E1F5EE;color:#085041;border-color:#5DCAA5;}
+.tag.c{background:#FAECE7;color:#712B13;border-color:#F0997B;}
+.compare-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:4px;}
+.cmp-card{padding:10px;border:.5px solid var(--color-border-tertiary);border-radius:10px;background:var(--color-background-secondary);display:flex;flex-direction:column;gap:6px;}
+.cmp-card.rec{border:1.5px solid #7F77DD;background:#EEEDFE;}
+.cmp-head{font-size:11px;font-weight:500;color:var(--color-text-primary);}
+.cmp-card.rec .cmp-head{color:#3C3489;}
+.cmp-item{font-size:10px;color:var(--color-text-secondary);padding-left:9px;position:relative;}
+.cmp-item::before{content:'·';position:absolute;left:0;}
+.rec-badge{font-size:9px;background:#7F77DD;color:#EEEDFE;padding:2px 7px;border-radius:4px;align-self:flex-start;}
+</style>
+
+<div class="root">
+<h2 class="sr-only">健身 APP 接入 AI 对话的三种 UI 骨架方案：悬浮入口、独立 Tab、上下文内嵌</h2>
+
+<div class="tabs" id="tabBar">
+  <button class="tab-btn active" onclick="show(0)">方案 A · 悬浮 AI 入口</button>
+  <button class="tab-btn" onclick="show(1)">方案 B · 独立 AI Tab</button>
+  <button class="tab-btn" onclick="show(2)">方案 C · 上下文内嵌</button>
+  <button class="tab-btn" onclick="show(3)">方案对比</button>
+</div>
+
+<div id="view0" class="layout">
+  <div class="phones">
+    <div class="phone-wrap">
+      <div class="phone-lbl">主界面（含悬浮球）</div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>● ● ●</span></div>
+        <div class="scr">
+          <div class="topbar"><span class="topbar-t">今日总览</span><span class="topbar-a">设置</span></div>
+          <div class="scroll">
+            <div style="display:flex;gap:5px;">
+              <div class="card" style="flex:1;text-align:center"><div style="font-size:8px;color:var(--color-text-secondary)">热量</div><div style="font-size:15px;font-weight:500;color:var(--color-text-primary)">1,840</div><div style="font-size:7px;color:var(--color-text-secondary)">/ 2,200</div></div>
+              <div class="card" style="flex:1;text-align:center"><div style="font-size:8px;color:var(--color-text-secondary)">蛋白质</div><div style="font-size:15px;font-weight:500;color:#1D9E75">98g</div><div style="font-size:7px;color:var(--color-text-secondary)">/ 150g</div></div>
+              <div class="card" style="flex:1;text-align:center"><div style="font-size:8px;color:var(--color-text-secondary)">训练</div><div style="font-size:15px;font-weight:500;color:#D85A30">45m</div><div style="font-size:7px;color:var(--color-text-secondary)">上肢推</div></div>
+            </div>
+            <div class="list-row"><div class="list-ic" style="background:#EEEDFE">💪</div><div style="flex:1"><div class="list-t">上肢推力 A</div><div class="list-m">今天 · 计划中</div></div><span class="badge" style="background:#EAF3DE;color:#27500A">完成</span></div>
+            <div class="card">
+              <div style="font-size:9px;color:var(--color-text-secondary);margin-bottom:5px">本周训练</div>
+              <div style="display:flex;gap:3px;align-items:flex-end;height:28px">
+                ${[60,20,80,50,70,10,5].map((h,i)=>`<div style="flex:1;border-radius:2px 2px 0 0;background:${i===4?'#7F77DD':i<5?'#AFA9EC':'var(--color-background-tertiary)'};height:${h}%"></div>`).join('')}
+              </div>
+            </div>
+            <div class="card" style="display:flex;gap:6px;flex-direction:column">
+              <div style="font-size:9px;color:var(--color-text-secondary)">今日饮食进度</div>
+              <div class="prog-bg"><div class="prog-fill" style="width:84%"></div></div>
+            </div>
+          </div>
+          <div style="position:relative;height:0;">
+            <div style="position:absolute;bottom:0;right:8px;width:34px;height:34px;border-radius:50%;background:#7F77DD;display:flex;align-items:center;justify-content:center;z-index:10;">
+              <span style="color:white;font-size:16px;line-height:1;">✦</span>
+            </div>
+          </div>
+          <div class="bnav">
+            <div class="ni active"><span class="ni-icon">🏠</span><span class="ni-lbl">总览</span></div>
+            <div class="ni"><span class="ni-icon">🥗</span><span class="ni-lbl">饮食</span></div>
+            <div class="ni"><span class="ni-icon">💪</span><span class="ni-lbl">训练</span></div>
+            <div class="ni"><span class="ni-icon">📋</span><span class="ni-lbl">计划</span></div>
+            <div class="ni"><span class="ni-icon">📊</span><span class="ni-lbl">数据</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone-lbl">点击悬浮球 → 半屏对话</div>
+      <div class="phone highlight">
+        <div class="sb"><span>9:41</span><span>● ● ●</span></div>
+        <div class="scr">
+          <div class="topbar">
+            <span class="topbar-t">今日总览</span>
+            <span style="font-size:9px;color:var(--color-text-secondary)">× 关闭</span>
+          </div>
+          <div style="flex:1;background:var(--color-background-secondary);border-top:.5px solid var(--color-border-tertiary);display:flex;flex-direction:column;overflow:hidden;">
+            <div style="padding:8px 10px;border-bottom:.5px solid var(--color-border-tertiary);display:flex;align-items:center;gap:6px;flex-shrink:0;">
+              <div style="width:20px;height:20px;border-radius:50%;background:#7F77DD;display:flex;align-items:center;justify-content:center;"><span style="color:white;font-size:10px;">✦</span></div>
+              <span style="font-size:11px;font-weight:500;color:var(--color-text-primary)">AI 健身助手</span>
+              <span style="font-size:9px;color:#1D9E75;margin-left:auto;">● 已读取今日数据</span>
+            </div>
+            <div style="flex:1;padding:8px 10px;display:flex;flex-direction:column;gap:6px;overflow:hidden;">
+              <div class="bubble system">已读取今天数据：热量 1840kcal · 训练完成</div>
+              <div class="ai-card">
+                <div class="ai-card-title">今日状态分析</div>
+                <div class="ai-card-row">
+                  <div class="mini-metric"><div class="val">84%</div><div class="lbl">热量完成</div></div>
+                  <div class="mini-metric"><div class="val">65%</div><div class="lbl">蛋白质</div></div>
+                  <div class="mini-metric"><div class="val">✓</div><div class="lbl">训练</div></div>
+                </div>
+                <div style="font-size:9px;color:#534AB7;margin-top:6px;line-height:1.5;">蛋白质缺口 52g，晚餐可补充鸡胸或豆腐。整体完成度不错！</div>
+              </div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                <span class="chip purple">帮我规划晚餐</span>
+                <span class="chip purple">今天该休息吗</span>
+                <span class="chip purple">下周计划建议</span>
+              </div>
+            </div>
+            <div class="input-row">
+              <div class="fake-input"><span>问问 AI…</span></div>
+              <div class="send-btn"><span>↑</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-panel">
+    <div class="icard">
+      <h3><span class="cdot" style="background:#7F77DD"></span>方案 A：悬浮 AI 入口</h3>
+      <p>AI 以悬浮球形式常驻各页面右下角，点击后从底部滑出半屏对话面板，不打断用户当前操作流。适合 AI 作为辅助角色、功能记录仍是主线的产品。</p>
+      <ul class="ul">
+        <li><strong>悬浮球图标</strong>：固定右下，可区别于 FAB（不同形状/颜色）</li>
+        <li><strong>半屏底抽屉</strong>：高度约 55%，可拖拽展开全屏</li>
+        <li><strong>上下文感知横幅</strong>：对话顶部自动标注"已读取今日数据"</li>
+        <li><strong>快速问题 chip</strong>：根据当前页面动态生成 3 个建议问题</li>
+        <li><strong>AI 结构化回复卡片</strong>：不只是文字，内嵌数据卡、进度条、行动按钮</li>
+      </ul>
+      <div class="tags">
+        <span class="tag p">最低干扰</span>
+        <span class="tag p">全局可用</span>
+        <span class="tag t">上下文注入</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="view1" class="layout" style="display:none">
+  <div class="phones">
+    <div class="phone-wrap">
+      <div class="phone-lbl">AI Tab 首屏</div>
+      <div class="phone highlight">
+        <div class="sb"><span>9:41</span><span>● ● ●</span></div>
+        <div class="scr">
+          <div class="topbar"><span class="topbar-t">AI 助手</span><span class="topbar-a">历史</span></div>
+          <div class="scroll">
+            <div style="display:flex;flex-direction:column;gap:5px;">
+              <div class="bubble system">早上好！今天是训练日 · 推力 A</div>
+              <div class="ai-card" style="max-width:100%">
+                <div class="ai-card-title">今日简报</div>
+                <div class="ai-card-row">
+                  <div class="mini-metric"><div class="val">72.5</div><div class="lbl">kg 体重</div></div>
+                  <div class="mini-metric"><div class="val">1,840</div><div class="lbl">kcal 摄入</div></div>
+                  <div class="mini-metric"><div class="val">第3周</div><div class="lbl">PPL 计划</div></div>
+                </div>
+              </div>
+              <div class="bubble ai">推力 A 建议今天卧推从 80kg 尝试 82.5kg，上周4组都完成了，可以小幅加重。</div>
+              <div class="bubble user">好的，那饮食方面呢？</div>
+              <div class="bubble ai">蛋白质今天只摄入了 98g，距目标差 52g。晚餐可以加一份鸡胸 150g（约 47g 蛋白质）基本补齐。</div>
+            </div>
+            <div style="margin-top:4px;">
+              <div style="font-size:9px;color:var(--color-text-secondary);margin-bottom:5px">快捷指令</div>
+              <div style="display:flex;flex-wrap:wrap;gap:4px;">
+                <span class="chip teal">记录体重</span>
+                <span class="chip teal">开始训练</span>
+                <span class="chip teal">添加饮食</span>
+                <span class="chip teal">查看进展</span>
+              </div>
+            </div>
+          </div>
+          <div class="input-row">
+            <div class="fake-input" style="background:var(--color-background-primary)"><span>和 AI 聊聊…</span></div>
+            <div class="send-btn"><span>↑</span></div>
+          </div>
+          <div class="bnav">
+            <div class="ni"><span class="ni-icon">🏠</span><span class="ni-lbl">总览</span></div>
+            <div class="ni"><span class="ni-icon">🥗</span><span class="ni-lbl">饮食</span></div>
+            <div class="ni"><span class="ni-icon">💪</span><span class="ni-lbl">训练</span></div>
+            <div class="ni"><span class="ni-icon">📋</span><span class="ni-lbl">计划</span></div>
+            <div class="ni active"><span class="ni-icon">✦</span><span class="ni-lbl" style="color:#7F77DD">AI</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone-lbl">AI 操作后跳转确认</div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>● ● ●</span></div>
+        <div class="scr">
+          <div class="topbar"><span class="topbar-t">AI 助手</span><span class="topbar-a">历史</span></div>
+          <div class="scroll">
+            <div class="bubble user">帮我把晚餐鸡胸饭记录进去</div>
+            <div class="bubble ai">好的，找到了：鸡胸肉饭 (200g)，约 380kcal，蛋白质 42g。帮你记录到今日晚餐？</div>
+            <div style="display:flex;gap:5px;align-self:flex-start;max-width:88%;">
+              <div class="ai-card" style="flex:1;max-width:100%">
+                <div class="ai-card-title">准备记录</div>
+                <div style="font-size:9px;color:#534AB7;line-height:1.6;">
+                  🍱 鸡胸肉饭 200g<br>
+                  热量 380 kcal · 蛋白质 42g<br>
+                  餐次：晚餐
+                </div>
+                <div style="display:flex;gap:5px;margin-top:6px;">
+                  <div style="flex:1;padding:5px;text-align:center;background:#7F77DD;border-radius:6px;font-size:9px;color:white;font-weight:500;">确认记录</div>
+                  <div style="flex:1;padding:5px;text-align:center;background:white;border:.5px solid #AFA9EC;border-radius:6px;font-size:9px;color:#3C3489;">修改</div>
+                </div>
+              </div>
+            </div>
+            <div class="bubble system">✓ 已记录到饮食 → 今日蛋白质 140g / 150g</div>
+            <div class="bubble ai">记好了！今天蛋白质差 10g，睡前一小杯牛奶就够了。</div>
+          </div>
+          <div class="input-row">
+            <div class="fake-input" style="background:var(--color-background-primary)"><span>继续对话…</span></div>
+            <div class="send-btn"><span>↑</span></div>
+          </div>
+          <div class="bnav">
+            <div class="ni"><span class="ni-icon">🏠</span><span class="ni-lbl">总览</span></div>
+            <div class="ni"><span class="ni-icon">🥗</span><span class="ni-lbl">饮食</span></div>
+            <div class="ni"><span class="ni-icon">💪</span><span class="ni-lbl">训练</span></div>
+            <div class="ni"><span class="ni-icon">📋</span><span class="ni-lbl">计划</span></div>
+            <div class="ni active"><span class="ni-icon">✦</span><span class="ni-lbl" style="color:#7F77DD">AI</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-panel">
+    <div class="icard">
+      <h3><span class="cdot" style="background:#1D9E75"></span>方案 B：独立 AI Tab</h3>
+      <p>AI 占据底部导航一个位置，成为和饮食/训练并列的核心模块。AI 拥有完整的会话界面，可以主动推送每日简报，也能执行跨模块操作（记饮食、启动训练、调整计划）。</p>
+      <ul class="ul">
+        <li><strong>每日简报卡片</strong>：打开即呈现今日体重/热量/训练状态摘要</li>
+        <li><strong>对话 + 操作双模式</strong>：AI 不只回答问题，可以直接执行记录操作，并要求用户确认</li>
+        <li><strong>快捷指令栏</strong>：高频操作做成 chip，语音/文字混合输入</li>
+        <li><strong>跨模块行动按钮</strong>：回复内嵌"确认记录""跳转训练"等可点击操作</li>
+        <li><strong>历史会话入口</strong>：顶部右侧，支持查询过去的建议记录</li>
+      </ul>
+      <div class="tags">
+        <span class="tag t">主角级 AI</span>
+        <span class="tag t">执行操作</span>
+        <span class="tag p">每日简报</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="view2" class="layout" style="display:none">
+  <div class="phones">
+    <div class="phone-wrap">
+      <div class="phone-lbl">饮食页内嵌建议</div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>● ● ●</span></div>
+        <div class="scr">
+          <div class="topbar"><span class="topbar-t">饮食记录</span><span class="topbar-a">+ 添加</span></div>
+          <div class="scroll">
+            <div style="background:#EEEDFE;border:.5px solid #AFA9EC;border-radius:10px;padding:8px 10px;display:flex;gap:7px;align-items:flex-start;">
+              <div style="width:18px;height:18px;border-radius:50%;background:#7F77DD;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;"><span style="color:white;font-size:9px;">✦</span></div>
+              <div style="flex:1;">
+                <div style="font-size:9px;font-weight:500;color:#3C3489;margin-bottom:3px;">AI 建议</div>
+                <div style="font-size:9px;color:#534AB7;line-height:1.5;">今天蛋白质缺口 52g，晚餐可加鸡胸或豆腐。碳水今天接近上限，晚餐主食建议减半。</div>
+                <div style="display:flex;gap:4px;margin-top:5px;">
+                  <span class="chip purple" style="font-size:8px;padding:3px 7px;">帮我规划晚餐</span>
+                  <span style="font-size:8px;color:#7F77DD;cursor:pointer;align-self:center;">收起</span>
+                </div>
+              </div>
+            </div>
+            <div class="card">
+              <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:5px;"><span style="font-size:9px;font-weight:500;color:var(--color-text-primary)">1,840 / 2,200 kcal</span><span style="font-size:8px;color:var(--color-text-secondary)">剩余 360</span></div>
+              <div class="prog-bg"><div class="prog-fill" style="width:84%"></div></div>
+            </div>
+            <div style="font-size:8px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;">早餐 · 7:30</div>
+            <div class="list-row"><div class="list-ic" style="background:#EAF3DE">🥚</div><div style="flex:1"><div class="list-t">燕麦 + 鸡蛋</div><div class="list-m">380 kcal · P 22g</div></div></div>
+            <div style="font-size:8px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;">午餐 · 12:15</div>
+            <div class="list-row"><div class="list-ic" style="background:#FAEEDA">🍱</div><div style="flex:1"><div class="list-t">鸡胸肉饭</div><div class="list-m">620 kcal · P 48g</div></div></div>
+            <div style="font-size:8px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;">晚餐 · 待添加</div>
+            <div style="border:.5px dashed var(--color-border-secondary);border-radius:8px;padding:8px;text-align:center;"><span style="font-size:9px;color:#7F77DD;">+ 添加晚餐</span></div>
+          </div>
+          <div class="bnav">
+            <div class="ni"><span class="ni-icon">🏠</span><span class="ni-lbl">总览</span></div>
+            <div class="ni active"><span class="ni-icon">🥗</span><span class="ni-lbl">饮食</span></div>
+            <div class="ni"><span class="ni-icon">💪</span><span class="ni-lbl">训练</span></div>
+            <div class="ni"><span class="ni-icon">📋</span><span class="ni-lbl">计划</span></div>
+            <div class="ni"><span class="ni-icon">📊</span><span class="ni-lbl">数据</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="phone-wrap">
+      <div class="phone-lbl">训练页内嵌建议</div>
+      <div class="phone">
+        <div class="sb"><span>9:41</span><span>● ● ●</span></div>
+        <div class="scr">
+          <div class="topbar"><span class="topbar-t">今日训练</span><span class="topbar-a">历史</span></div>
+          <div class="scroll">
+            <div style="background:#EEEDFE;border:.5px solid #AFA9EC;border-radius:10px;padding:8px 10px;display:flex;gap:7px;align-items:flex-start;">
+              <div style="width:18px;height:18px;border-radius:50%;background:#7F77DD;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;"><span style="color:white;font-size:9px;">✦</span></div>
+              <div style="flex:1;">
+                <div style="font-size:9px;font-weight:500;color:#3C3489;margin-bottom:3px;">AI 今日建议</div>
+                <div style="font-size:9px;color:#534AB7;line-height:1.5;">卧推上周4组均完成，今天可试 82.5kg。昨天休息充分，精力应该不错。</div>
+              </div>
+            </div>
+            <div style="background:#EEEDFE;border:.5px solid #AFA9EC;border-radius:10px;padding:8px 10px;">
+              <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px;"><span style="font-size:10px;font-weight:500;color:#3C3489">上肢推力 A</span><span class="badge" style="background:#7F77DD;color:white">进行中</span></div>
+              <div style="font-size:8px;color:#534AB7;">44:20 · 5/8 个动作</div>
+            </div>
+            <div style="font-size:8px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;">已完成</div>
+            ${[['卧推','4×8 @ 80kg','PR 提醒：可+2.5kg'],['肩上推举','4×8 @ 55kg','']].map(([n,s,hint])=>`
+            <div class="list-row" style="${hint?'border-color:#AFA9EC':''}">
+              <div style="width:14px;height:14px;border-radius:50%;background:#EAF3DE;display:flex;align-items:center;justify-content:center;font-size:8px;color:#27500A;flex-shrink:0;">✓</div>
+              <div style="flex:1"><div class="list-t">${n}</div><div class="list-m">${s}${hint?` · <span style="color:#7F77DD">${hint}</span>`:''}</div></div>
+            </div>`).join('')}
+            <div style="font-size:8px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.4px;">待完成</div>
+            <div class="list-row" style="opacity:.55"><div style="width:14px;height:14px;border-radius:50%;border:.5px solid var(--color-border-secondary);flex-shrink:0;"></div><div style="flex:1"><div class="list-t">侧平举</div><div class="list-m">3×15 @ 12kg</div></div></div>
+          </div>
+          <div class="bnav">
+            <div class="ni"><span class="ni-icon">🏠</span><span class="ni-lbl">总览</span></div>
+            <div class="ni"><span class="ni-icon">🥗</span><span class="ni-lbl">饮食</span></div>
+            <div class="ni active"><span class="ni-icon">💪</span><span class="ni-lbl">训练</span></div>
+            <div class="ni"><span class="ni-icon">📋</span><span class="ni-lbl">计划</span></div>
+            <div class="ni"><span class="ni-icon">📊</span><span class="ni-lbl">数据</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-panel">
+    <div class="icard">
+      <h3><span class="cdot" style="background:#D85A30"></span>方案 C：上下文内嵌建议</h3>
+      <p>AI 不以独立入口存在，而是在每个功能页顶部插入一张感知卡片，主动推送与当前页面强相关的建议。用户无需主动发问，AI 洞察融入操作流。</p>
+      <ul class="ul">
+        <li><strong>感知卡片（Insight Card）</strong>：各功能页顶部，显示 AI 针对当前数据的 1-2 条洞察</li>
+        <li><strong>可折叠 / 可关闭</strong>：不打扰时可收起，保持页面整洁</li>
+        <li><strong>训练页：动态负重建议</strong>：基于上周完成情况，每个动作显示是否可加重</li>
+        <li><strong>饮食页：宏量缺口提示</strong>：实时计算剩余空间，提供食物补充建议</li>
+        <li><strong>无独立对话界面</strong>：点击"继续对话"才展开对话框（类方案 A 的半屏模式）</li>
+      </ul>
+      <div class="tags">
+        <span class="tag c">主动推送</span>
+        <span class="tag c">零打断</span>
+        <span class="tag t">情境感知</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="view3" style="display:none">
+  <div class="compare-grid">
+    <div class="cmp-card">
+      <div class="cmp-head">方案 A<br><span style="font-size:10px;color:var(--color-text-secondary);font-weight:400">悬浮入口</span></div>
+      <div class="cmp-item">AI 作辅助角色</div>
+      <div class="cmp-item">全局可调出</div>
+      <div class="cmp-item">对现有导航零改动</div>
+      <div class="cmp-item">半屏底抽屉</div>
+      <div class="cmp-item">适合 MVP / 快速接入</div>
+    </div>
+    <div class="cmp-card rec">
+      <div class="rec-badge">推荐起点</div>
+      <div class="cmp-head">方案 B<br><span style="font-size:10px;color:#534AB7;font-weight:400">独立 Tab</span></div>
+      <div class="cmp-item" style="color:#534AB7;">AI 是核心功能之一</div>
+      <div class="cmp-item" style="color:#534AB7;">可执行操作（记录/计划）</div>
+      <div class="cmp-item" style="color:#534AB7;">每日简报 + 主动推送</div>
+      <div class="cmp-item" style="color:#534AB7;">底部 Tab 占一席</div>
+      <div class="cmp-item" style="color:#534AB7;">适合 AI-first 产品定位</div>
+    </div>
+    <div class="cmp-card">
+      <div class="cmp-head">方案 C<br><span style="font-size:10px;color:var(--color-text-secondary);font-weight:400">内嵌建议</span></div>
+      <div class="cmp-item">AI 完全隐形</div>
+      <div class="cmp-item">按页面推送洞察</div>
+      <div class="cmp-item">无单独对话框</div>
+      <div class="cmp-item">感知卡片可折叠</div>
+      <div class="cmp-item">适合不想"显得 AI"的产品</div>
+    </div>
+  </div>
+  <div style="margin-top:16px;display:grid;grid-template-columns:repeat(auto-fit,minmax(0,1fr));gap:8px;">
+    ${[
+      ['导航侵入性','低','中','无'],
+      ['AI 能力上限','对话','对话+操作','单向推送'],
+      ['工程复杂度','低','高','中'],
+      ['用户意识到 AI','主动调出才感知','强感知','弱感知'],
+    ].map(([dim,...vals])=>`
+    <div class="icard" style="padding:.7rem 1rem;">
+      <div style="font-size:11px;font-weight:500;color:var(--color-text-primary);margin-bottom:7px">${dim}</div>
+      ${vals.map((v,i)=>`<div style="display:flex;justify-content:space-between;align-items:center;padding:3px 0;border-top:.5px solid var(--color-border-tertiary);">
+        <span style="font-size:10px;color:var(--color-text-secondary)">方案 ${'ABC'[i]}</span>
+        <span style="font-size:10px;color:${i===1?'#7F77DD':'var(--color-text-primary)'};font-weight:${i===1?'500':'400'}">${v}</span>
+      </div>`).join('')}
+    </div>`).join('')}
+  </div>
+</div>
+</div>
+
+<script>
+function show(i){
+  [0,1,2,3].forEach(j=>{
+    document.getElementById('view'+j).style.display = j===i?'':'none';
+  });
+  document.querySelectorAll('.tab-btn').forEach((b,j)=>{
+    b.classList.toggle('active', j===i);
+  });
+}
+</script>

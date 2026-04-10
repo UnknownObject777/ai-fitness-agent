@@ -1,0 +1,161 @@
+[
+  {
+    "id": "1775810929490",
+    "timestamp": "2026-04-10T08:48:49.490Z",
+    "intent": "log_food",
+    "entryDate": "today",
+    "data": {
+      "food_name": "燕麦片配香蕉和核桃",
+      "quantity": 1,
+      "unit": "份",
+      "meal_type": "breakfast",
+      "calories": 350,
+      "protein": 12,
+      "carbs": 55,
+      "fat": 10
+    }
+  },
+  {
+    "id": "1775810930000",
+    "timestamp": "2026-04-10T08:50:00.000Z",
+    "intent": "log_food",
+    "entryDate": "today",
+    "data": {
+      "food_name": "香煎鸡胸肉配藜麦和西兰花",
+      "quantity": 1,
+      "unit": "份",
+      "meal_type": "lunch",
+      "calories": 450,
+      "protein": 35,
+      "carbs": 40,
+      "fat": 15
+    }
+  },
+  {
+    "id": "1775810931000",
+    "timestamp": "2026-04-10T09:15:00.000Z",
+    "intent": "log_food",
+    "entryDate": "today",
+    "data": {
+      "food_name": "希腊酸奶配蓝莓",
+      "quantity": 200,
+      "unit": "g",
+      "meal_type": "snack",
+      "calories": 180,
+      "protein": 15,
+      "carbs": 20,
+      "fat": 4
+    }
+  },
+  {
+    "id": "1775810932000",
+    "timestamp": "2026-04-09T19:30:00.000Z",
+    "intent": "log_food",
+    "entryDate": "yesterday",
+    "data": {
+      "food_name": "烤三文鱼配芦笋和红薯",
+      "quantity": 1,
+      "unit": "份",
+      "meal_type": "dinner",
+      "calories": 520,
+      "protein": 30,
+      "carbs": 45,
+      "fat": 22
+    }
+  },
+  {
+    "id": "1775810933000",
+    "timestamp": "2026-04-09T08:00:00.000Z",
+    "intent": "log_food",
+    "entryDate": "yesterday",
+    "data": {
+      "food_name": "全麦吐司配牛油果和煎蛋",
+      "quantity": 2,
+      "unit": "片",
+      "meal_type": "breakfast",
+      "calories": 380,
+      "protein": 14,
+      "carbs": 32,
+      "fat": 24
+    }
+  },
+  {
+    "id": "1775819459038",
+    "timestamp": "2026-04-10T11:10:59.038Z",
+    "intent": "generate_workout_plan",
+    "entryDate": "today",
+    "data": {
+      "plan_metadata": {
+        "goal_orientation": "performance",
+        "total_weeks": 4,
+        "start_phase": "learn_to_move",
+        "rationale": "用户选择路径A（零基础），必须从'学习动作'阶段开始，优先建立神经肌肉连接和正确的生物力学模式，避免在缺乏技术的情况下增加负荷导致受伤。"
+      },
+      "user_profile": {
+        "training_age": "beginner",
+        "estimated_1rm": {
+          "squat": null,
+          "deadlift": null,
+          "bench_press": null
+        }
+      },
+      "periodization_structure": {
+        "macrocycle": {
+          "phases": [
+            {
+              "phase_name": "Learn to Move",
+              "duration_weeks": 4,
+              "primary_focus": "Technique & Stability"
+            }
+          ]
+        },
+        "mesocycles": [
+          {
+            "cycle_name": "Foundation Week 1-4",
+            "goal": "Mastering basic movement patterns"
+          }
+        ]
+      },
+      "weekly_templates": [
+        {
+          "week_number": 1,
+          "sessions": [
+            {
+              "session_id": "A",
+              "exercises": [
+                {
+                  "name": "杯状深蹲 (Goblet Squat)",
+                  "sets": 3,
+                  "reps": 12,
+                  "rpe": 6,
+                  "notes": "关注重心在足跟，背部挺直，膝盖与脚尖方向一致"
+                },
+                {
+                  "name": "俯卧撑 (Knee Push-ups if needed)",
+                  "sets": 3,
+                  "reps": 10,
+                  "rpe": 7,
+                  "notes": "核心收紧，身体呈直线，不要塌腰"
+                },
+                {
+                  "name": "哑铃单臂划船",
+                  "sets": 3,
+                  "reps": 12,
+                  "rpe": 6,
+                  "notes": "肩胛骨向后收拢，避免身体过度旋转"
+                },
+                {
+                  "name": "平板支撑",
+                  "sets": 3,
+                  "reps": 30,
+                  "rpe": 7,
+                  "notes": "维持身体直线，感受核心深层发力"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+]

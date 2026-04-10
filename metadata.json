@@ -1,0 +1,5 @@
+{
+  "name": "Sparky AI Fitness Agent",
+  "description": "A professional AI fitness and nutrition coach that naturally extracts and logs health data from conversations.",
+  "requestFramePermissions": []
+}
