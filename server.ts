@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import path from 'path';
+import fs from 'fs/promises';
 import { createServer as createViteServer } from 'vite';
 import { getSystemPrompt } from './services/systemPrompt';
 import {
@@ -21,9 +22,46 @@ import {
 async function startServer() {
   const app = express();
   const PORT = 3000;
+  const uploadDir = path.join(process.cwd(), 'uploads');
 
   app.use(cors());
   app.use(express.json({ limit: '50mb' }));
+  await fs.mkdir(uploadDir, { recursive: true });
+  app.use('/uploads', express.static(uploadDir));
+
+  app.post('/api/upload-image', async (req, res) => {
+    try {
+      const { base64Image } = req.body;
+      if (typeof base64Image !== 'string' || !base64Image.startsWith('data:image/')) {
+        res.status(400).json({ success: false, error: 'Invalid image payload' });
+        return;
+      }
+
+      const match = base64Image.match(/^data:(image\/[a-zA-Z0-9.+-]+);base64,(.+)$/);
+      if (!match) {
+        res.status(400).json({ success: false, error: 'Unsupported image format' });
+        return;
+      }
+
+      const mimeType = match[1].toLowerCase();
+      const base64Data = match[2];
+      const extensionMap: Record<string, string> = {
+        'image/jpeg': 'jpg',
+        'image/jpg': 'jpg',
+        'image/png': 'png',
+        'image/webp': 'webp',
+        'image/gif': 'gif'
+      };
+      const extension = extensionMap[mimeType] || 'png';
+      const imageKey = `chat_${Date.now()}_${Math.random().toString(36).slice(2, 8)}.${extension}`;
+      const imagePath = path.join(uploadDir, imageKey);
+
+      await fs.writeFile(imagePath, Buffer.from(base64Data, 'base64'));
+      res.json({ success: true, imageKey, imageUrl: `/uploads/${imageKey}` });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
 
   app.get('/api/system-prompt', (req, res) => {
     res.json({ prompt: getSystemPrompt() });
@@ -93,11 +131,11 @@ async function startServer() {
 
   app.post('/api/chat-openai', async (req, res) => {
     try {
-      const { messages, sessionId = 'session_1', base64Image } = req.body;
+      const { messages, sessionId = 'session_1', base64Image, imageKey } = req.body;
       const systemPrompt = getSystemPrompt();
       const latestUserMessage = messages[messages.length - 1];
 
-      await addChatMessage(sessionId, 'user', latestUserMessage.content, base64Image);
+      await addChatMessage(sessionId, 'user', latestUserMessage.content, imageKey || base64Image);
 
       const apiMessages = [
         { role: 'system', content: systemPrompt },
