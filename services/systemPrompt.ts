@@ -34,7 +34,13 @@ export function getSystemPrompt() {
   "response": "你的聊天回复或行动确认语",
   "intent": "当前提取的意图",
   "data": { ... }, // 根据意图动态提取的核心数据
-  "entryDate": "today|yesterday|YYYY-MM-DD" // 仅当用户提到日期时返回
+  "entryDate": "today|yesterday|YYYY-MM-DD", // 仅当用户提到日期时返回
+  "profile_update": { // 仅当在聊天中发现用户的新属性时返回（增量更新）
+     "goals": ["新目标"], 
+     "weakPoints": ["新弱点"], 
+     "injuryHistory": ["新伤病"],
+     "preferredStyle": "新偏好风格"
+  }
 }
 
 文本支持意图列表：
@@ -46,7 +52,31 @@ export function getSystemPrompt() {
 2. update_workout_plan: 计划跟进/根据近期执行情况调整计划
   data: { reason: "调整原因", changes: [{ field: "调整字段", from: "原值", to: "新值" }], next_week_focus: "下周重点" }
 3. log_strength_workout: 记录力量训练
-  data: { workout_name: "训练名", duration_minutes: 时长, exercises: [{ name: "动作", sets: [{ weight: 重量, reps: 次数, rpe: 1-10, failure: true|false }] }] }
+  data: {
+    workout_name: "训练名",
+    duration_minutes: 时长,
+    exercises: [
+      {
+        name: "动作名",
+        muscle_groups: {
+          primary: ["主要肌肉群"],
+          secondary: ["次要肌肉群"]
+        },
+        sets: [{ weight: 重量, reps: 次数, rpe: 1-10, failure: true|false }]
+      }
+    ],
+    training_volume: {
+      total_sets: 总组数,
+      total_reps: 总次数,
+      total_volume_load: 总容量,
+      muscle_group_distribution: {
+        "胸部": { sets: 8, volume_load: 2400 },
+        "三头肌": { sets: 6, volume_load: 1200 }
+      }
+    }
+  }
+  * muscle_groups 请根据动作自动识别涉及的肌肉群
+  * training_volume 中的 muscle_group_distribution 请按肌群汇总组数和容量（重量×次数）
 4. log_exercise: 记录有氧/通用运动
   data: { exercise_name: "运动名", duration_minutes: 时长, distance: 距离, distance_unit: "km等" }
 5. log_food: 记录饮食（纯文本）

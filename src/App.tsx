@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { GoogleGenAI } from "@google/genai";
 import { 
   Send, 
@@ -24,9 +24,12 @@ import {
   Archive,
   ArchiveRestore,
   PencilLine,
-  Trash2
+  Trash2,
+  Brain,
+  Zap
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import TrainingCardView from './components/TrainingCardView';
 
 interface Message {
   id?: string;
@@ -75,7 +78,10 @@ export default function App() {
   const [editLogError, setEditLogError] = useState('');
   const [isSavingLogEdit, setIsSavingLogEdit] = useState(false);
   const [sessionId, setSessionId] = useState<string>('session_1');
+  const [showMemory, setShowMemory] = useState(false);
+  const [semanticMemory, setSemanticMemory] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [dataVersion, setDataVersion] = useState(0); // NEW: Data version for refresh trigger
   const fileInputRef = useRef<HTMLInputElement>(null);
   const chatEndRef = useRef<HTMLDivElement>(null);
   const chatScrollRef = useRef<HTMLDivElement>(null);
@@ -114,6 +120,7 @@ export default function App() {
   useEffect(() => {
     fetchLogs();
     fetchSessions('all');
+    fetchSemanticMemory();
   }, []);
 
   useEffect(() => {
@@ -384,16 +391,17 @@ export default function App() {
     }
   };
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     try {
       const res = await fetch('/api/logs');
       const data = await res.json();
       setLogs(Array.isArray(data) ? data : []);
+      setDataVersion(prev => prev + 1); // Trigger refresh of derived data
     } catch (error) {
       console.error("Failed to fetch logs:", error);
       setLogs([]);
     }
-  };
+  }, []);
 
   const editableLogIntents = new Set([
     'log_food',
@@ -402,6 +410,18 @@ export default function App() {
     'log_strength_workout',
     'log_measurement'
   ]);
+
+  const fetchSemanticMemory = async () => {
+    try {
+      const res = await fetch('/api/semantic-memory');
+      const data = await res.json();
+      if (data.success) {
+        setSemanticMemory(data.memory);
+      }
+    } catch (e) {
+      console.error('Failed to fetch semantic memory:', e);
+    }
+  };
 
   const canManageLog = (intent: string) => editableLogIntents.has(intent);
 
@@ -648,6 +668,7 @@ export default function App() {
       }
 
       await fetchLogs();
+      setDataVersion(prev => prev + 1); // Force refresh
       closeLogEditor();
     } catch (error: any) {
       setEditLogError(error.message || '修改失败，请稍后重试');
@@ -669,6 +690,7 @@ export default function App() {
       }
 
       await fetchLogs();
+      setDataVersion(prev => prev + 1); // Force refresh
       if (editingLog?.id === log.id) {
         closeLogEditor();
       }
@@ -727,9 +749,18 @@ export default function App() {
     }
   };
 
-  const dietLogs = logs.filter((log) => log.intent === 'log_food' || log.intent === 'log_food_multi');
-  const workoutLogs = logs.filter((log) => ['log_exercise', 'log_strength_workout', 'log_measurement'].includes(log.intent));
-  const planLogs = logs.filter((log) => log.intent.includes('plan'));
+  const dietLogs = useMemo(() =>
+    logs.filter((log) => log.intent === 'log_food' || log.intent === 'log_food_multi'),
+    [logs, dataVersion]
+  );
+  const workoutLogs = useMemo(() =>
+    logs.filter((log) => ['log_exercise', 'log_strength_workout', 'log_measurement'].includes(log.intent)),
+    [logs, dataVersion]
+  );
+  const planLogs = useMemo(() =>
+    logs.filter((log) => log.intent.includes('plan')),
+    [logs, dataVersion]
+  );
   const activeSessions = sessions.filter((session) => !session.archived);
   const archivedSessions = sessions.filter((session) => session.archived);
   const currentSession = sessions.find((session) => session.id === sessionId);
@@ -785,6 +816,18 @@ export default function App() {
               >
                 <Database className="w-[18px] h-[18px]" />
               </button>
+              <button
+                onClick={() => {
+                  setShowSessionManager(false);
+                  setShowLogs(false);
+                  setShowMemory(!showMemory);
+                  if (!showMemory) fetchSemanticMemory();
+                }}
+                className={`p-2 rounded-xl transition-colors ${showMemory ? 'bg-[#EEEDFE] text-[#7F77DD]' : 'text-[#141414]/40 hover:bg-[#F5F5F5] hover:text-[#7F77DD]'}`}
+                title="AI 记忆"
+              >
+                <Brain className="w-[18px] h-[18px]" />
+              </button>
             </div>
           )}
         </header>
@@ -793,7 +836,7 @@ export default function App() {
           {activeTab === 'ai' ? (
             <>
               {/* Chat Area */}
-              <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${(showLogs || showSessionManager) ? 'hidden' : 'flex'}`}>
+              <div className={`flex-1 flex flex-col overflow-hidden transition-all duration-300 ${(showLogs || showSessionManager || showMemory) ? 'hidden' : 'flex'}`}>
                 <div ref={chatScrollRef} className="flex-1 overflow-y-auto p-4 space-y-4">
                   {messages.length === 0 && (
                     <div className="flex flex-col items-center mt-6 space-y-4">
@@ -963,7 +1006,99 @@ export default function App() {
                     </div>
                   )}
                   <div ref={chatEndRef} className="h-2" />
-                </div>{/* end chatScrollRef */}
+              </div>
+
+              {/* Memory View */}
+              {showMemory && (
+                <div className="flex-1 overflow-y-auto p-5 bg-[#F9F9F9]">
+                  <div className="flex items-center gap-3 mb-6">
+                    <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#7F77DD] to-[#5A52C0] flex items-center justify-center shadow-lg shadow-[#7F77DD]/20">
+                      <Brain className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-[16px] font-bold text-[#141414]">AI 长期记忆</h2>
+                      <p className="text-[11px] text-[#141414]/40">基于对话自动构建的个人画像</p>
+                    </div>
+                  </div>
+
+                  {semanticMemory ? (
+                    <div className="space-y-4">
+                      <div className="bg-white rounded-[24px] p-5 border border-[#EAEAEE] shadow-sm">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Target className="w-4 h-4 text-[#F0997B]" />
+                          <h3 className="text-[13px] font-bold text-[#141414]">核心目标</h3>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {semanticMemory.userProfile.goals.length > 0 ? (
+                            semanticMemory.userProfile.goals.map((g: string, i: number) => (
+                              <span key={i} className="px-3 py-1.5 rounded-full bg-[#FFF5F2] text-[#F0997B] text-[11px] font-bold border border-[#F0997B]/10">
+                                {getGoalLabel(g)}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[12px] text-[#141414]/40 italic">通过聊天告诉 AI 你的目标...</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-white rounded-[24px] p-5 border border-[#EAEAEE] shadow-sm">
+                          <div className="flex items-center gap-2 mb-3">
+                            <AlertTriangle className="w-4 h-4 text-amber-500" />
+                            <h3 className="text-[13px] font-bold text-[#141414]">关注点</h3>
+                          </div>
+                          <div className="space-y-1.5">
+                            {semanticMemory.userProfile.weakPoints.length > 0 ? (
+                              semanticMemory.userProfile.weakPoints.map((w: string, i: number) => (
+                                <div key={i} className="text-[11px] text-[#141414]/60 flex items-center gap-1.5">
+                                  <div className="w-1 h-1 rounded-full bg-amber-400" />
+                                  {w}
+                                </div>
+                              ))
+                            ) : (
+                              <div className="text-[11px] text-[#141414]/40 italic">暂无</div>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="bg-white rounded-[24px] p-5 border border-[#EAEAEE] shadow-sm">
+                          <div className="flex items-center gap-2 mb-3">
+                            <Zap className="w-4 h-4 text-[#7F77DD]" />
+                            <h3 className="text-[13px] font-bold text-[#141414]">风格</h3>
+                          </div>
+                          <p className="text-[12px] text-[#141414]/70 font-medium">
+                            {semanticMemory.userProfile.preferredStyle || '暂未发现'}
+                          </p>
+                        </div>
+                      </div>
+
+                      <div className="bg-white rounded-[24px] p-5 border border-[#EAEAEE] shadow-sm">
+                        <h3 className="text-[13px] font-bold text-[#141414] mb-3">健康史</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {semanticMemory.userProfile.injuryHistory.length > 0 ? (
+                            semanticMemory.userProfile.injuryHistory.map((h: string, i: number) => (
+                              <span key={i} className="px-3 py-1 rounded-lg bg-gray-50 text-gray-500 text-[11px] border border-gray-100">
+                                {h}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-[11px] text-[#141414]/40 italic">暂无记录</span>
+                          )}
+                        </div>
+                      </div>
+
+                      <p className="text-[10px] text-[#141414]/30 text-center mt-4">
+                        更新于: {formatDate(semanticMemory.updatedAt)}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-20 opacity-30">
+                      <Brain className="w-12 h-12 mb-4" />
+                      <p className="text-sm">正在同步记忆...</p>
+                    </div>
+                  )}
+                </div>
+              )}
 
             {/* Input Area */}
             <div className="px-3 py-2.5 border-t border-[#EAEAEE] bg-white flex-shrink-0">
@@ -1442,79 +1577,46 @@ export default function App() {
           )}
 
           {activeTab === 'workout' && (
-            workoutLogs.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center gap-3 text-[#141414]/25 pb-8">
-                <div className="w-16 h-16 rounded-2xl bg-[#F5F5F5] flex items-center justify-center">
-                  <Dumbbell className="w-8 h-8" />
-                </div>
-                <div className="text-center">
-                  <p className="text-[13px] font-medium">暂无训练记录</p>
-                  <p className="text-[11px] mt-1">通过 AI 对话记录训练情况</p>
-                </div>
-              </div>
-            ) : (
-              [...workoutLogs].reverse().map((log) => (
-                <div key={log.id} className="bg-white rounded-2xl border border-[#EAEAEE] shadow-sm overflow-hidden">
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-[#F5F5F7]">
-                    <div className="flex items-center gap-2.5">
-                      <div className={`w-8 h-8 rounded-xl flex items-center justify-center ${
-                        log.intent === 'log_strength_workout' ? 'bg-[#E1F5EE]' :
-                        log.intent === 'log_measurement' ? 'bg-[#F3F0FF]' : 'bg-[#EAF8F1]'
-                      }`}>
-                        {getIntentIcon(log.intent)}
-                      </div>
-                      <div>
-                        <div className="text-[13px] font-semibold text-[#141414]">
-                          {log.data?.exercise_name || log.data?.workout_name || getIntentLabel(log.intent)}
-                        </div>
-                        <div className="text-[10px] text-[#141414]/40">{getIntentLabel(log.intent)}</div>
-                      </div>
-                    </div>
-                    <span className="text-[10px] text-[#141414]/35">{formatDate(log.timestamp)}</span>
-                  </div>
-                  <div className="px-4 py-3">
-                    <div className="flex gap-3">
-                      {log.data?.duration_minutes > 0 && (
-                        <div className="flex flex-col">
-                          <span className="text-[18px] font-bold text-[#1D9E75]">{log.data.duration_minutes}</span>
-                          <span className="text-[10px] text-[#141414]/40">分钟</span>
-                        </div>
-                      )}
-                      {log.data?.exercises?.length > 0 && (
-                        <div className="flex flex-col">
-                          <span className="text-[18px] font-bold text-[#7F77DD]">{log.data.exercises.length}</span>
-                          <span className="text-[10px] text-[#141414]/40">个动作</span>
-                        </div>
-                      )}
-                      {log.intent === 'log_measurement' && log.data?.weight_kg && (
-                        <div className="flex flex-col">
-                          <span className="text-[18px] font-bold text-[#141414]">{log.data.weight_kg}</span>
-                          <span className="text-[10px] text-[#141414]/40">kg</span>
-                        </div>
-                      )}
-                    </div>
-                    {log.data?.note && (
-                      <div className="text-[11px] text-[#141414]/50 mt-2 bg-[#F9F9F9] rounded-lg px-3 py-2">{log.data.note}</div>
-                    )}
-                  </div>
-                  <div className="flex border-t border-[#F5F5F7]">
-                    <button
-                      onClick={() => openLogEditor(log)}
-                      className="flex-1 py-2.5 text-[12px] font-medium text-[#7F77DD] hover:bg-[#F5F4FF] transition-colors"
-                    >
-                      修改
-                    </button>
-                    <div className="w-px bg-[#F5F5F7]" />
-                    <button
-                      onClick={() => deleteLogRecord(log)}
-                      className="flex-1 py-2.5 text-[12px] font-medium text-[#B94747] hover:bg-[#FFF8F8] transition-colors"
-                    >
-                      删除
-                    </button>
-                  </div>
-                </div>
-              ))
-            )
+            <TrainingCardView
+              onSaveWorkout={async (workout) => {
+                // Convert workout to log format and save
+                const workoutData = {
+                  workout_name: workout.name,
+                  duration_minutes: workout.estimatedDurationMinutes,
+                  exercises: workout.exercises.map(ex => ({
+                    name: ex.name,
+                    muscle_groups: ex.muscleGroups,
+                    sets: ex.sets.map(s => ({
+                      weight: s.weight,
+                      reps: s.reps,
+                      rpe: s.rpe || 5,
+                      failure: false
+                    }))
+                  }))
+                };
+
+                try {
+                  const res = await fetch('/api/save-record', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      intent: 'log_strength_workout',
+                      data: workoutData,
+                      entryDate: 'today'
+                    })
+                  });
+                  if (res.ok) {
+                    await fetchLogs();
+                  }
+                } catch (e) {
+                  console.error('Failed to save workout:', e);
+                }
+              }}
+              onCreateFreeWorkout={() => {
+                // Handle free workout creation
+                console.log('Creating free workout');
+              }}
+            />
           )}
 
           {activeTab === 'plan' && (

@@ -18,6 +18,7 @@ import {
   updateActivityRecord,
   deleteActivityRecord
 } from './services/dbService';
+import { buildAgentContext, formatContextAsSystemPrompt, updateSemanticMemory, getOrInitSemanticMemory, analyzeMuscleGroups, aggregateWeeklyStats, getWeekNumber, mergeWeeklyStats } from './services/memoryService';
 
 async function startServer() {
   const app = express();
@@ -132,13 +133,18 @@ async function startServer() {
   app.post('/api/chat-openai', async (req, res) => {
     try {
       const { messages, sessionId = 'session_1', base64Image, imageKey } = req.body;
-      const systemPrompt = getSystemPrompt();
       const latestUserMessage = messages[messages.length - 1];
+
+      // Build Memory Context
+      const context = await buildAgentContext(latestUserMessage.content, sessionId, messages);
+      const memoryPrompt = formatContextAsSystemPrompt(context);
+      const baseSystemPrompt = getSystemPrompt();
+      const combinedSystemPrompt = `${baseSystemPrompt}\n\n${memoryPrompt}`;
 
       await addChatMessage(sessionId, 'user', latestUserMessage.content, imageKey || base64Image);
 
       const apiMessages = [
-        { role: 'system', content: systemPrompt },
+        { role: 'system', content: combinedSystemPrompt },
         ...messages.slice(0, -1).map((message: any) => ({ role: message.role, content: message.content }))
       ];
 
@@ -190,6 +196,16 @@ async function startServer() {
         aiResponse.intent = 'log_food_multi';
       }
 
+      // Handle Memory Updates
+      if (aiResponse.profile_update) {
+        try {
+          await updateSemanticMemory(aiResponse.profile_update);
+          console.log('Semantic memory updated:', aiResponse.profile_update);
+        } catch (memError) {
+          console.error('Failed to update semantic memory:', memError);
+        }
+      }
+
       await addChatMessage(
         sessionId,
         'assistant',
@@ -213,6 +229,46 @@ async function startServer() {
       if (intent === 'log_food_multi') {
         const record = await saveMealLogMulti('user_1', data, 'photo');
         res.json({ success: true, record });
+      } else if (intent === 'log_strength_workout') {
+        // Save the workout record
+        const record = await saveRecord(intent, data, entryDate);
+
+        // Analyze muscle groups
+        const muscleAnalysis = analyzeMuscleGroups(data);
+
+        // Get current week ID
+        const now = new Date();
+        const weekId = `${now.getFullYear()}-W${getWeekNumber(now)}`;
+
+        // Aggregate weekly stats
+        const weeklyStats = await aggregateWeeklyStats('user_1', weekId, [record]);
+
+        // Update semantic memory with weekly stats
+        const memory = await getOrInitSemanticMemory('user_1');
+        if (!memory.weeklyTrainingStats) {
+          memory.weeklyTrainingStats = {};
+        }
+        if (!memory.weeklyTrainingStats[weekId]) {
+          memory.weeklyTrainingStats[weekId] = weeklyStats;
+        } else {
+          // Merge existing stats
+          mergeWeeklyStats(memory.weeklyTrainingStats[weekId], weeklyStats);
+        }
+
+        await updateSemanticMemory({
+          goals: memory.userProfile.goals,
+          weakPoints: memory.userProfile.weakPoints,
+          injuryHistory: memory.userProfile.injuryHistory,
+          preferredStyle: memory.userProfile.preferredStyle,
+          weeklyTrainingStats: memory.weeklyTrainingStats
+        }, 'user_1');
+
+        res.json({
+          success: true,
+          record,
+          muscleAnalysis,
+          weeklyStats
+        });
       } else {
         const record = await saveRecord(intent, data, entryDate);
         res.json({ success: true, record });
@@ -228,6 +284,15 @@ async function startServer() {
       res.json(logs);
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get('/api/semantic-memory', async (req, res) => {
+    try {
+      const memory = await getOrInitSemanticMemory('user_1');
+      res.json({ success: true, memory });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
     }
   });
 
