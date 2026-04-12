@@ -142,6 +142,12 @@ async function initSchema(db: Database<sqlite3.Database, sqlite3.Statement>) {
       note TEXT,
       raw_json TEXT
     );
+
+    CREATE TABLE IF NOT EXISTS user_semantic_memory (
+      user_id TEXT PRIMARY KEY,
+      memory_json TEXT NOT NULL,
+      updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 
   await ensureChatSessionColumns(db);
@@ -744,4 +750,35 @@ export async function deleteActivityRecord(recordId: string) {
   if (current.intent === 'log_measurement') {
     await db.run('DELETE FROM body_metrics WHERE id = ?', recordId);
   }
+}
+
+export async function getSemanticMemory(userId: string = 'user_1') {
+  const db = await getDb();
+  const row = await db.get('SELECT memory_json FROM user_semantic_memory WHERE user_id = ?', userId);
+  return row ? JSON.parse(row.memory_json) : null;
+}
+
+export async function saveSemanticMemory(userId: string, memory: any) {
+  const db = await getDb();
+  await db.run(
+    'INSERT OR REPLACE INTO user_semantic_memory (user_id, memory_json, updated_at) VALUES (?, ?, CURRENT_TIMESTAMP)',
+    userId,
+    JSON.stringify(memory)
+  );
+}
+
+export async function getEpisodicMemories(userId: string = 'user_1', limit: number = 20) {
+  const db = await getDb();
+  const rows = await db.all(
+    'SELECT * FROM activity_records WHERE user_id = ? ORDER BY timestamp DESC LIMIT ?',
+    userId,
+    limit
+  );
+  return rows.map(r => ({
+    id: r.id,
+    intent: r.intent,
+    entryDate: r.entry_date,
+    timestamp: r.timestamp,
+    data: JSON.parse(r.data_json)
+  }));
 }

@@ -1,0 +1,5 @@
+{
+  "name": "FitMind AI - 智能健身助手",
+  "description": "基于三层记忆系统的智能健身 Agent，支持 Gemini 和 OpenAI，记录你的每一次进步。",
+  "requestFramePermissions": []
+}
