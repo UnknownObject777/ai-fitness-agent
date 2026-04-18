@@ -26,10 +26,13 @@ import {
   PencilLine,
   Trash2,
   Brain,
-  Zap
+  Zap,
+  BarChart2
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import TrainingCardView from './components/TrainingCardView';
+import AnalysisDashboard from './components/AnalysisDashboard';
+import ManualDietEntry from './components/ManualDietEntry';
 
 interface Message {
   id?: string;
@@ -60,7 +63,7 @@ interface ChatSession {
 }
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'diet' | 'workout' | 'plan' | 'ai'>('ai');
+  const [activeTab, setActiveTab] = useState<'home' | 'diet' | 'workout' | 'plan' | 'ai' | 'analysis'>('ai');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [provider, setProvider] = useState<'openai' | 'gemini'>('openai');
@@ -79,6 +82,7 @@ export default function App() {
   const [isSavingLogEdit, setIsSavingLogEdit] = useState(false);
   const [sessionId, setSessionId] = useState<string>('session_1');
   const [showMemory, setShowMemory] = useState(false);
+  const [showManualDiet, setShowManualDiet] = useState(false);
   const [semanticMemory, setSemanticMemory] = useState<any>(null);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [dataVersion, setDataVersion] = useState(0); // NEW: Data version for refresh trigger
@@ -786,6 +790,7 @@ export default function App() {
               {activeTab === 'workout' && '今日训练'}
               {activeTab === 'plan' && '训练计划'}
               {activeTab === 'ai' && 'AI 助手'}
+              {activeTab === 'analysis' && '数据分析'}
             </h1>
             {activeTab === 'ai' && currentSession && (
               <p className="text-[11px] text-[#141414]/40 mt-0.5 truncate max-w-[180px]">
@@ -1492,6 +1497,13 @@ export default function App() {
                   <p className="text-[13px] font-medium">暂无饮食记录</p>
                   <p className="text-[11px] mt-1">通过 AI 对话记录每日饮食</p>
                 </div>
+                <button
+                  onClick={() => setShowManualDiet(true)}
+                  className="mt-4 px-4 py-2 bg-[#F0997B] text-white rounded-xl text-[12px] font-medium hover:bg-[#D85A30] shadow-md shadow-[#F0997B]/20 transition-all flex items-center gap-1.5"
+                >
+                  <Plus className="w-4 h-4" />
+                  手动录入
+                </button>
               </div>
             ) : (
               [...dietLogs].reverse().map((log) => (
@@ -1574,6 +1586,16 @@ export default function App() {
                 </div>
               ))
             )
+          )}
+          
+          {/* Floating plus button for diet view if it has items */}
+          {activeTab === 'diet' && dietLogs.length > 0 && (
+            <button
+              onClick={() => setShowManualDiet(true)}
+              className="absolute bottom-20 right-4 w-12 h-12 bg-[#F0997B] text-white rounded-full flex items-center justify-center shadow-lg shadow-[#F0997B]/30 hover:scale-105 active:scale-95 transition-all z-10"
+            >
+              <Plus className="w-6 h-6" />
+            </button>
           )}
 
           {activeTab === 'workout' && (
@@ -1658,6 +1680,10 @@ export default function App() {
                 </div>
               ))
             )
+          )}
+
+          {activeTab === 'analysis' && (
+            <AnalysisDashboard />
           )}
         </div>
       )}
@@ -1867,6 +1893,18 @@ export default function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {showManualDiet && (
+          <ManualDietEntry
+            onClose={() => setShowManualDiet(false)}
+            onSave={() => {
+              setShowManualDiet(false);
+              fetchLogs();
+            }}
+          />
+        )}
+      </AnimatePresence>
       </main>
 
       {/* Bottom Navigation */}
@@ -1875,6 +1913,7 @@ export default function App() {
           { id: 'home', label: '总览', icon: Home },
           { id: 'diet', label: '饮食', icon: Utensils },
           { id: 'workout', label: '训练', icon: Dumbbell },
+          { id: 'analysis', label: '分析', icon: BarChart2 },
           { id: 'plan', label: '计划', icon: ClipboardList },
           { id: 'ai', label: 'AI', icon: Sparkles },
         ] as const).map(({ id, label, icon: Icon }) => {

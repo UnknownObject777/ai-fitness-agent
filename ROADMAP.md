@@ -17,7 +17,7 @@
 **技术栈：**
 - 前端：React 19 + TypeScript + Vite 6 + Tailwind CSS 4
 - 后端：Express.js + SQLite3
-- AI：OpenAI API / Gemini API
+- AI：OpenAI API / Gemini API（v1.3 后升级为 Vercel AI SDK）
 - UI 组件：Lucide React + Motion
 
 ---
@@ -139,8 +139,58 @@ GET /api/analysis/workout-trends?range=30d
 
 ## Phase 3: 智能建议系统 (v1.3)
 
-**时间规划：** 2-3 周
-**核心技能：** 自定义算法 + `data-analysis`
+**时间规划：** 3-4 周（含技术升级）
+**核心技能：** 自定义算法 + `data-analysis` + `Vercel AI SDK`
+
+### 3.0 技术前置：引入 Vercel AI SDK（Agent 框架升级）
+
+**升级动机：**
+
+v1.1/v1.2 的 AI 交互基于手动 Intent 路由（AI 返回 `{intent, data}` → server switch-case）。
+v1.3 需要 AI **自主决策、多步调用分析工具**，手动路由难以维护，因此在 Phase 3 开始前完成框架迁移。
+
+**为什么选 Vercel AI SDK（而非 LangChain.js）：**
+- ✅ 轻量，包体积远小于 LangChain.js
+- ✅ 原生支持 OpenAI + Gemini（与现有 API 无缝切换）
+- ✅ 内置 `streamText` / `generateText` + Tool Calling
+- ✅ 渐进式迁移：旧 intent 路由继续保留，新分析工具用 SDK
+- ✅ TypeScript 类型安全，与现有栈完全兼容
+
+**安装：**
+```bash
+npm install ai @ai-sdk/openai @ai-sdk/google
+```
+
+**新增 AI 工具函数（`services/aiTools.ts`）：**
+```typescript
+import { tool } from 'ai';
+import { z } from 'zod';
+
+export const getWorkoutTrendsTool = tool({
+  description: '查询用户指定时间范围内的训练趋势数据',
+  parameters: z.object({
+    range: z.enum(['7d', '30d', '90d']).describe('查询时间范围'),
+    userId: z.string().default('user_1'),
+  }),
+  execute: async ({ range, userId }) => {
+    // 调用 trainingAnalytics.ts 中的聚合函数
+    return await getWorkoutTrends(userId, range);
+  },
+});
+
+export const getNutritionSummaryTool = tool({ /* ... */ });
+export const getBodyMetricsTool = tool({ /* ... */ });
+export const detectTrainingPlateau = tool({ /* ... */ });
+```
+
+**迁移策略：**
+- 旧的 `log_*` intent（记录饮食/训练）**保持现有路由不动**
+- 新的分析、建议类请求改用 SDK `streamText` + tools
+- 分阶段替换，不影响 v1.1/v1.2 已上线功能
+
+**工作量：** 约 3-4 天（含集成测试）
+
+---
 
 ### 3.1 训练计划智能调整
 
@@ -270,10 +320,10 @@ feishuCard.send({
 
 | 版本 | 时间 | 目标 | 关键成果 |
 |------|------|------|----------|
-| v1.1 | +3周 | 数据分析上线 | 训练/饮食数据可视化 |
-| v1.2 | +6周 | 报告系统上线 | 周/月报告自动生成 |
-| v1.3 | +9周 | 智能建议上线 | AI 计划调整建议 |
-| v1.4 | +11周 | 社交功能上线 | 飞书推送/分享卡片 |
+| v1.1 | +3周 | 数据分析上线 | 训练/饮食数据可视化（Recharts）|
+| v1.2 | +6周 | 报告系统上线 | 周/月报告自动生成（PDF）|
+| v1.3 | +10周 | 智能建议上线 | Vercel AI SDK 升级 + AI 计划调整建议 |
+| v1.4 | +12周 | 社交功能上线 | 飞书推送/分享卡片 |
 | v2.0 | +6个月 | 完整生态 | 多平台集成/社区功能 |
 
 ---
@@ -340,6 +390,6 @@ server/
 
 ---
 
-*文档版本: 1.0*
-*最后更新: 2026-04-12*
+*文档版本: 1.1*
+*最后更新: 2026-04-18*
 *维护者: Sparky AI Team*

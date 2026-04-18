@@ -65,3 +65,14 @@ DEFAULT_AI_PROVIDER=openai
 
 ### UI Structure
 Mobile-styled container (iPhone-like frame), bottom navigation with 5 tabs: Home, Diet, Workout, Plan, AI. The AI tab contains chat interface with image upload support for food recognition.
+
+## Memory System
+
+Additional documentation available in `memory/` directory:
+- `MEMORY.md` - Index of all memory files
+- `project_overview.md` - Detailed project overview
+- `database_schema.md` - Complete database schema
+- `api_endpoints.md` - API reference
+- `intent_system.md` - Intent extraction system
+- `services_architecture.md` - Backend services
+- `frontend_structure.md` - React components

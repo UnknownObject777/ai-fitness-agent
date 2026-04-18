@@ -19,6 +19,10 @@ import {
   deleteActivityRecord
 } from './services/dbService';
 import { buildAgentContext, formatContextAsSystemPrompt, updateSemanticMemory, getOrInitSemanticMemory, analyzeMuscleGroups, aggregateWeeklyStats, getWeekNumber, mergeWeeklyStats } from './services/memoryService';
+import { getWorkoutTrends, getBodyMetricsTrend } from './services/trainingAnalytics';
+import { getNutritionAnalysis } from './services/nutritionService';
+import { generateWorkoutInsights, generateNutritionInsights, generateCombinedInsights } from './services/insightEngine';
+import { searchFoodLogics } from './services/nutritionApiService';
 
 async function startServer() {
   const app = express();
@@ -321,6 +325,82 @@ async function startServer() {
       res.status(500).json({ success: false, error: error.message });
     }
   });
+
+  // ─── v1.1 Analysis API ───────────────────────────────────────────────────
+
+  // GET /api/analysis/workout-trends?range=30d&userId=user_1
+  app.get('/api/analysis/workout-trends', async (req, res) => {
+    try {
+      const range = String(req.query.range || '30d');
+      const userId = String(req.query.userId || 'user_1');
+      const data = await getWorkoutTrends(userId, range);
+      const insights = generateWorkoutInsights(data);
+      res.json({ success: true, data, insights });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // GET /api/analysis/nutrition?range=30d&userId=user_1
+  app.get('/api/analysis/nutrition', async (req, res) => {
+    try {
+      const range = String(req.query.range || '30d');
+      const userId = String(req.query.userId || 'user_1');
+      const data = await getNutritionAnalysis(userId, range);
+      const insights = generateNutritionInsights(data);
+      res.json({ success: true, data, insights });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // GET /api/analysis/body-metrics?range=90d&userId=user_1
+  app.get('/api/analysis/body-metrics', async (req, res) => {
+    try {
+      const range = String(req.query.range || '90d');
+      const userId = String(req.query.userId || 'user_1');
+      const data = await getBodyMetricsTrend(userId, range);
+      res.json({ success: true, data });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // GET /api/analysis/summary?range=30d  – combined insights for dashboard
+  app.get('/api/analysis/summary', async (req, res) => {
+    try {
+      const range = String(req.query.range || '30d');
+      const userId = String(req.query.userId || 'user_1');
+      const [workoutData, nutritionData, bodyData] = await Promise.all([
+        getWorkoutTrends(userId, range),
+        getNutritionAnalysis(userId, range),
+        getBodyMetricsTrend(userId, range)
+      ]);
+      const insights = generateCombinedInsights(workoutData, nutritionData);
+      res.json({
+        success: true,
+        workout: workoutData,
+        nutrition: nutritionData,
+        bodyMetrics: bodyData,
+        insights
+      });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // GET /api/dictionary/foods?q=xxx
+  app.get('/api/dictionary/foods', async (req, res) => {
+    try {
+      const q = String(req.query.q || '');
+      const foods = await searchFoodLogics(q);
+      res.json({ success: true, data: foods });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // ─────────────────────────────────────────────────────────────────────────
 
   if (process.env.NODE_ENV !== 'production') {
     const vite = await createViteServer({

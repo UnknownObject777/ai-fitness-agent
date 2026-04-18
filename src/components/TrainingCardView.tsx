@@ -21,6 +21,7 @@ import {
   ChevronLeft,
   ChevronRight
 } from 'lucide-react';
+import ExerciseSelectorModal from './ExerciseSelectorModal';
 
 // Types
 export interface ExerciseSet {
@@ -175,6 +176,7 @@ export default function TrainingCardView({
   const [activeWorkout, setActiveWorkout] = useState<WorkoutDay | null>(null);
   const [restTimers, setRestTimers] = useState<Record<string, number>>({});
   const [expandedExercises, setExpandedExercises] = useState<Set<string>>(new Set());
+  const [showExerciseModal, setShowExerciseModal] = useState(false);
 
   // Timer effect
   useEffect(() => {
@@ -277,13 +279,17 @@ export default function TrainingCardView({
   };
 
   const handleAddExercise = () => {
+    setShowExerciseModal(true);
+  };
+
+  const handleExerciseSelect = (exerciseData: Pick<Exercise, 'name' | 'muscleGroups' | 'equipment'>) => {
     if (!activeWorkout) return;
 
     const newExercise: Exercise = {
       id: generateId(),
-      name: '新动作',
-      muscleGroups: [],
-      equipment: '杠铃',
+      name: exerciseData.name,
+      muscleGroups: exerciseData.muscleGroups,
+      equipment: exerciseData.equipment,
       restSeconds: 120,
       targetSets: 3,
       targetReps: '8-12',
@@ -298,6 +304,7 @@ export default function TrainingCardView({
       ...activeWorkout,
       exercises: [...activeWorkout.exercises, newExercise]
     });
+    setShowExerciseModal(false);
   };
 
   const handleRemoveExercise = (exerciseId: string) => {
@@ -720,6 +727,15 @@ export default function TrainingCardView({
         {view === 'templates' && renderTemplates()}
         {view === 'active' && renderActiveWorkout()}
       </div>
+
+      <AnimatePresence>
+        {showExerciseModal && (
+          <ExerciseSelectorModal
+            onClose={() => setShowExerciseModal(false)}
+            onSelect={handleExerciseSelect}
+          />
+        )}
+      </AnimatePresence>
     </div>
   );
 }
