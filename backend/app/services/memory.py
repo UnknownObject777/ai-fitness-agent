@@ -232,7 +232,12 @@ async def aggregate_weekly_stats(
                 continue
             name = str(exercise.get("name") or exercise.get("exercise_name") or "unknown")
             entry = exercise_records.setdefault(name, {"bestWeight": 0, "bestReps": 0, "totalSets": 0})
-            for item in exercise.get("sets") or []:
+            raw_sets = exercise.get("sets") or []
+            if isinstance(raw_sets, int):
+                raw_sets = [{"weight": exercise.get("weight_kg") or exercise.get("weight") or 0, "reps": exercise.get("reps") or 0} for _ in range(raw_sets)]
+            if not isinstance(raw_sets, list):
+                raw_sets = []
+            for item in raw_sets:
                 if not isinstance(item, dict):
                     continue
                 weight = float(item.get("weight") or item.get("weight_kg") or 0)
@@ -287,4 +292,3 @@ def merge_weekly_stats(existing: dict[str, Any], new_stats: dict[str, Any]) -> d
                 current["bestWeight"] = data.get("bestWeight", 0)
                 current["bestReps"] = data.get("bestReps", 0)
     return existing
-

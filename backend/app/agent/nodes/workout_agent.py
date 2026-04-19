@@ -56,6 +56,50 @@ def _parse_strength(text: str) -> dict[str, Any]:
     }
 
 
+def _normalize_strength_data(data: dict[str, Any]) -> dict[str, Any]:
+    exercises = data.get("exercises") if isinstance(data.get("exercises"), list) else []
+    normalized = []
+    total_sets = 0
+    total_reps = 0
+    total_volume = 0.0
+
+    for exercise in exercises:
+        if not isinstance(exercise, dict):
+            continue
+        next_exercise = dict(exercise)
+        raw_sets = next_exercise.get("sets")
+        reps = int(next_exercise.get("reps") or 8)
+        weight = float(next_exercise.get("weight_kg") or next_exercise.get("weight") or 0)
+
+        if isinstance(raw_sets, list):
+            sets = [item for item in raw_sets if isinstance(item, dict)]
+        else:
+            set_count = int(raw_sets or next_exercise.get("set_count") or 1)
+            sets = [{"weight": weight, "reps": reps, "rpe": next_exercise.get("rpe"), "failure": False} for _ in range(set_count)]
+
+        next_exercise["sets"] = sets
+        if "name" not in next_exercise and next_exercise.get("exercise_name"):
+            next_exercise["name"] = next_exercise["exercise_name"]
+        normalized.append(next_exercise)
+
+        for item in sets:
+            item_weight = float(item.get("weight") or item.get("weight_kg") or weight or 0)
+            item_reps = int(item.get("reps") or reps or 0)
+            total_sets += 1
+            total_reps += item_reps
+            total_volume += item_weight * item_reps
+
+    data["exercises"] = normalized
+    if not isinstance(data.get("training_volume"), dict):
+        data["training_volume"] = {}
+    data["training_volume"].setdefault("total_sets", total_sets)
+    data["training_volume"].setdefault("total_reps", total_reps)
+    data["training_volume"].setdefault("total_volume_load", total_volume)
+    data.setdefault("duration_minutes", 45)
+    data.setdefault("workout_name", "Strength workout")
+    return data
+
+
 async def workout_agent_node(state: AgentState) -> AgentState:
     intent = state.get("detected_intent", "log_exercise")
     text = state.get("user_message", "")
@@ -77,13 +121,16 @@ async def workout_agent_node(state: AgentState) -> AgentState:
                     HumanMessage(content=f"Intent: {intent}\nMemory:\n{state.get('memory_prompt', '')}\nMessage: {text}"),
                 ]
             )
-            if intent == "log_strength_workout" and not result.data.get("exercises"):
+            data = result.data
+            if intent == "log_strength_workout":
+                data = _normalize_strength_data(data)
+            if intent == "log_strength_workout" and not data.get("exercises"):
                 raise ValueError("structured workout data missing exercises")
-            if intent == "log_exercise" and not result.data.get("exercise_name"):
+            if intent == "log_exercise" and not data.get("exercise_name"):
                 raise ValueError("structured exercise data missing exercise_name")
             return {
                 **state,
-                "structured_data": result.data,
+                "structured_data": data,
                 "ai_response": result.response,
                 "profile_update": result.profile_update,
                 "entry_date": result.entry_date or state.get("entry_date"),
