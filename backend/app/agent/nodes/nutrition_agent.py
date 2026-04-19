@@ -1,6 +1,10 @@
 import re
 from typing import Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
+
+from app.agent.llm import get_chat_model
+from app.agent.schemas import DomainResult
 from app.agent.state import AgentState
 
 
@@ -11,6 +15,31 @@ def _extract_number(pattern: str, text: str, default: float | None = None) -> fl
 
 async def nutrition_agent_node(state: AgentState) -> AgentState:
     text = state.get("user_message", "")
+
+    model = get_chat_model()
+    if model is not None:
+        try:
+            result = await model.with_structured_output(DomainResult).ainvoke(
+                [
+                    SystemMessage(
+                        content=(
+                            "Extract a food log. Respond in Chinese. "
+                            "Use data keys food_name, meal_type, calories, protein, carbs, fat."
+                        )
+                    ),
+                    HumanMessage(content=f"Memory:\n{state.get('memory_prompt', '')}\nMessage: {text}"),
+                ]
+            )
+            return {
+                **state,
+                "structured_data": result.data,
+                "ai_response": result.response,
+                "profile_update": result.profile_update,
+                "entry_date": result.entry_date or state.get("entry_date"),
+            }
+        except Exception:
+            pass
+
     meal_type = "meal"
     if "早餐" in text:
         meal_type = "breakfast"
@@ -40,4 +69,3 @@ async def nutrition_agent_node(state: AgentState) -> AgentState:
         "structured_data": data,
         "ai_response": "已整理成饮食记录；如果热量或宏量营养不确定，可以之后手动修正。",
     }
-

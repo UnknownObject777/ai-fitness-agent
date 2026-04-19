@@ -1,6 +1,7 @@
 import pytest
 
 from app.agent.graph import get_agent_graph
+from app.agent.llm import get_chat_model
 from app.config import get_settings
 from app.services import db
 
@@ -8,11 +9,15 @@ from app.services import db
 @pytest.fixture(autouse=True)
 async def isolated_db(tmp_path, monkeypatch):
     monkeypatch.setenv("SPARKY_DATABASE_PATH", str(tmp_path / "fitness.sqlite"))
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    monkeypatch.setenv("GEMINI_API_KEY", "")
     get_settings.cache_clear()
+    get_chat_model.cache_clear()
     get_agent_graph.cache_clear()
     await db.init_db()
     yield
     get_agent_graph.cache_clear()
+    get_chat_model.cache_clear()
     get_settings.cache_clear()
 
 

@@ -5,6 +5,8 @@ import httpx
 import pytest
 
 from app.config import get_settings
+from app.agent.graph import get_agent_graph
+from app.agent.llm import get_chat_model
 from app.services import db
 
 
@@ -12,7 +14,11 @@ from app.services import db
 async def client(tmp_path, monkeypatch):
     monkeypatch.setenv("SPARKY_DATABASE_PATH", str(tmp_path / "fitness.sqlite"))
     monkeypatch.setenv("SPARKY_UPLOAD_DIR", str(tmp_path / "uploads"))
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    monkeypatch.setenv("GEMINI_API_KEY", "")
     get_settings.cache_clear()
+    get_chat_model.cache_clear()
+    get_agent_graph.cache_clear()
     main = importlib.import_module("app.main")
     importlib.reload(main)
     await db.init_db()
@@ -20,6 +26,8 @@ async def client(tmp_path, monkeypatch):
     async with httpx.AsyncClient(transport=transport, base_url="http://test") as api:
         yield api
     get_settings.cache_clear()
+    get_chat_model.cache_clear()
+    get_agent_graph.cache_clear()
 
 
 async def test_chat_openai_json_compatibility(client):

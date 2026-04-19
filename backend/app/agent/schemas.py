@@ -33,3 +33,11 @@ class AgentPayload(BaseModel):
 
     model_config = {"populate_by_name": True}
 
+
+class DomainResult(BaseModel):
+    response: str
+    data: dict[str, Any] = Field(default_factory=dict)
+    profile_update: dict[str, Any] | None = None
+    entry_date: str | None = Field(default=None, alias="entryDate")
+
+    model_config = {"populate_by_name": True}

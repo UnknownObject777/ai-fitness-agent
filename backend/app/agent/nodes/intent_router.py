@@ -1,5 +1,9 @@
 import re
 
+from langchain_core.messages import HumanMessage, SystemMessage
+
+from app.agent.llm import get_chat_model
+from app.agent.schemas import IntentResult
 from app.agent.state import AgentState
 
 
@@ -16,6 +20,33 @@ def _date_hint(text: str) -> str | None:
 async def intent_router_node(state: AgentState) -> AgentState:
     text = state.get("user_message", "")
     lowered = text.lower()
+
+    model = get_chat_model()
+    if model is not None:
+        try:
+            structured = model.with_structured_output(IntentResult)
+            result = await structured.ainvoke(
+                [
+                    SystemMessage(
+                        content=(
+                            "Classify the user message into one Sparky intent. "
+                            "Use log_food_multi when an image is present. "
+                            "Return entryDate as today, yesterday, YYYY-MM-DD, or null."
+                        )
+                    ),
+                    HumanMessage(
+                        content=f"Image present: {bool(state.get('base64_image'))}\nMessage: {text}"
+                    ),
+                ]
+            )
+            return {
+                **state,
+                "detected_intent": result.intent,
+                "intent_confidence": result.confidence,
+                "entry_date": result.entry_date or _date_hint(text),
+            }
+        except Exception:
+            pass
 
     if state.get("base64_image"):
         intent = "log_food_multi"
@@ -66,4 +97,3 @@ def route_by_intent(state: AgentState) -> str:
     if intent in {"generate_workout_plan", "update_workout_plan"}:
         return "planner"
     return "chat"
-

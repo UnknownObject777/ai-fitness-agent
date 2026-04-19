@@ -1,6 +1,10 @@
 import re
 from typing import Any
 
+from langchain_core.messages import HumanMessage, SystemMessage
+
+from app.agent.llm import get_chat_model
+from app.agent.schemas import DomainResult
 from app.agent.state import AgentState
 
 
@@ -56,6 +60,33 @@ async def workout_agent_node(state: AgentState) -> AgentState:
     intent = state.get("detected_intent", "log_exercise")
     text = state.get("user_message", "")
 
+    model = get_chat_model()
+    if model is not None:
+        try:
+            result = await model.with_structured_output(DomainResult).ainvoke(
+                [
+                    SystemMessage(
+                        content=(
+                            "Extract structured fitness data for the requested intent. "
+                            "Respond in Chinese. Keep data keys compatible with the existing frontend: "
+                            "log_strength_workout uses workout_name, duration_minutes, exercises, training_volume; "
+                            "log_exercise uses exercise_name and duration_minutes; "
+                            "log_measurement uses measurements and metric fields."
+                        )
+                    ),
+                    HumanMessage(content=f"Intent: {intent}\nMemory:\n{state.get('memory_prompt', '')}\nMessage: {text}"),
+                ]
+            )
+            return {
+                **state,
+                "structured_data": result.data,
+                "ai_response": result.response,
+                "profile_update": result.profile_update,
+                "entry_date": result.entry_date or state.get("entry_date"),
+            }
+        except Exception:
+            pass
+
     if intent == "log_strength_workout":
         data = _parse_strength(text)
         response = "已整理成力量训练记录，保存前可以再核对重量、组数和次数。"
@@ -75,4 +106,3 @@ async def workout_agent_node(state: AgentState) -> AgentState:
         response = "已整理成运动记录，继续保持这个节奏。"
 
     return {**state, "structured_data": data, "ai_response": response}
-
