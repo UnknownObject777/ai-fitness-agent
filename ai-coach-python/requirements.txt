@@ -1,0 +1,10 @@
+fastapi==0.115.8
+uvicorn
+pydantic
+langgraph
+langchain-google-genai
+python-dotenv
+tavily-python
+langchain-community
+sqlalchemy
+psycopg2-binary
