@@ -27,8 +27,10 @@ async def intent_router_node(state: AgentState) -> AgentState:
     elif any(token in text for token in ["计划", "安排", "训练方案"]) or "plan" in lowered:
         heuristic_intent = "update_workout_plan" if any(token in text for token in ["调整", "修改", "更新"]) else "generate_workout_plan"
         heuristic_confidence = 0.82
-    elif any(token in lowered for token in ["bench", "squat", "deadlift", "press", "row"]) or any(
-        token in text for token in ["卧推", "深蹲", "硬拉", "划船", "力量", "组"]
+    elif (
+        any(token in lowered for token in ["bench", "squat", "deadlift", "press", "row"])
+        or any(token in text for token in ["卧推", "深蹲", "硬拉", "划船", "力量", "组"])
+        or (re.search(r"\d+\s*[xX*×]\s*\d+", text) and re.search(r"\d+(?:\.\d+)?\s*(?:kg|公斤)", lowered))
     ):
         heuristic_intent = "log_strength_workout"
         heuristic_confidence = 0.82
@@ -69,13 +71,21 @@ async def intent_router_node(state: AgentState) -> AgentState:
                     ),
                 ]
             )
+            detected_intent = result.intent
+            if not state.get("base64_image") and detected_intent == "log_food_multi":
+                detected_intent = heuristic_intent if heuristic_intent != "chat" else "chat"
+            elif heuristic_confidence >= 0.75 and detected_intent != heuristic_intent:
+                detected_intent = heuristic_intent
+
+            entry_date = _date_hint(text) or result.entry_date
+            if entry_date in {"null", "none", "None", ""}:
+                entry_date = None
+
             return {
                 **state,
-                "detected_intent": heuristic_intent
-                if heuristic_confidence >= 0.75 and result.intent != heuristic_intent
-                else result.intent,
+                "detected_intent": detected_intent,
                 "intent_confidence": max(result.confidence, heuristic_confidence),
-                "entry_date": _date_hint(text) or result.entry_date,
+                "entry_date": entry_date,
             }
         except Exception:
             pass
