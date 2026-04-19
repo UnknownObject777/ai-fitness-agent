@@ -12,6 +12,7 @@ class Settings(BaseSettings):
     openai_api_key: str | None = None
     openai_base_url: str = "https://api.openai.com/v1"
     openai_model: str = "gpt-4o-mini"
+    openai_timeout_seconds: float = 45.0
     gemini_api_key: str | None = None
     gemini_model: str = "gemini-2.5-flash"
     default_ai_provider: str = "openai"
@@ -43,4 +44,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-

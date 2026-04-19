@@ -26,6 +26,8 @@ async def planner_agent_node(state: AgentState) -> AgentState:
                     ),
                 ]
             )
+            if not result.data.get("weekly_templates"):
+                raise ValueError("structured plan data missing weekly_templates")
             return {
                 **state,
                 "structured_data": result.data,

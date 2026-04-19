@@ -77,6 +77,10 @@ async def workout_agent_node(state: AgentState) -> AgentState:
                     HumanMessage(content=f"Intent: {intent}\nMemory:\n{state.get('memory_prompt', '')}\nMessage: {text}"),
                 ]
             )
+            if intent == "log_strength_workout" and not result.data.get("exercises"):
+                raise ValueError("structured workout data missing exercises")
+            if intent == "log_exercise" and not result.data.get("exercise_name"):
+                raise ValueError("structured exercise data missing exercise_name")
             return {
                 **state,
                 "structured_data": result.data,

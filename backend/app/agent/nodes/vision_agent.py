@@ -26,6 +26,8 @@ async def vision_agent_node(state: AgentState) -> AgentState:
                     ),
                 ]
             )
+            if not result.data.get("items") or not result.data.get("total"):
+                raise ValueError("structured vision data missing items or total")
             return {
                 **state,
                 "structured_data": result.data,

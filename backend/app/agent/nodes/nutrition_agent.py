@@ -30,6 +30,8 @@ async def nutrition_agent_node(state: AgentState) -> AgentState:
                     HumanMessage(content=f"Memory:\n{state.get('memory_prompt', '')}\nMessage: {text}"),
                 ]
             )
+            if not result.data.get("food_name"):
+                raise ValueError("structured nutrition data missing food_name")
             return {
                 **state,
                 "structured_data": result.data,

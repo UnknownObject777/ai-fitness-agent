@@ -21,6 +21,36 @@ async def intent_router_node(state: AgentState) -> AgentState:
     text = state.get("user_message", "")
     lowered = text.lower()
 
+    if state.get("base64_image"):
+        heuristic_intent = "log_food_multi"
+        heuristic_confidence = 0.95
+    elif any(token in text for token in ["计划", "安排", "训练方案"]) or "plan" in lowered:
+        heuristic_intent = "update_workout_plan" if any(token in text for token in ["调整", "修改", "更新"]) else "generate_workout_plan"
+        heuristic_confidence = 0.82
+    elif any(token in lowered for token in ["bench", "squat", "deadlift", "press", "row"]) or any(
+        token in text for token in ["卧推", "深蹲", "硬拉", "划船", "力量", "组"]
+    ):
+        heuristic_intent = "log_strength_workout"
+        heuristic_confidence = 0.82
+    elif any(token in text for token in ["跑步", "骑车", "游泳", "有氧", "运动"]) or any(
+        token in lowered for token in ["run", "cardio", "swim"]
+    ):
+        heuristic_intent = "log_exercise"
+        heuristic_confidence = 0.78
+    elif any(token in text for token in ["吃", "早餐", "午餐", "晚餐", "加餐"]) or any(
+        token in lowered for token in ["eat", "food", "meal", "kcal", "calorie"]
+    ):
+        heuristic_intent = "log_food"
+        heuristic_confidence = 0.78
+    elif any(token in text for token in ["体重", "体脂", "腰围", "胸围"]) or any(
+        token in lowered for token in ["weight", "body fat", "waist"]
+    ):
+        heuristic_intent = "log_measurement"
+        heuristic_confidence = 0.78
+    else:
+        heuristic_intent = "chat"
+        heuristic_confidence = 0.5
+
     model = get_chat_model()
     if model is not None:
         try:
@@ -41,47 +71,19 @@ async def intent_router_node(state: AgentState) -> AgentState:
             )
             return {
                 **state,
-                "detected_intent": result.intent,
-                "intent_confidence": result.confidence,
-                "entry_date": result.entry_date or _date_hint(text),
+                "detected_intent": heuristic_intent
+                if heuristic_confidence >= 0.75 and result.intent != heuristic_intent
+                else result.intent,
+                "intent_confidence": max(result.confidence, heuristic_confidence),
+                "entry_date": _date_hint(text) or result.entry_date,
             }
         except Exception:
             pass
 
-    if state.get("base64_image"):
-        intent = "log_food_multi"
-        confidence = 0.95
-    elif any(token in text for token in ["计划", "安排", "训练方案"]) or "plan" in lowered:
-        intent = "update_workout_plan" if any(token in text for token in ["调整", "修改", "更新"]) else "generate_workout_plan"
-        confidence = 0.82
-    elif any(token in lowered for token in ["bench", "squat", "deadlift", "press", "row"]) or any(
-        token in text for token in ["卧推", "深蹲", "硬拉", "划船", "力量", "组"]
-    ):
-        intent = "log_strength_workout"
-        confidence = 0.82
-    elif any(token in text for token in ["跑步", "骑车", "游泳", "有氧", "运动"]) or any(
-        token in lowered for token in ["run", "cardio", "swim"]
-    ):
-        intent = "log_exercise"
-        confidence = 0.78
-    elif any(token in text for token in ["吃", "早餐", "午餐", "晚餐", "加餐"]) or any(
-        token in lowered for token in ["eat", "food", "meal", "kcal", "calorie"]
-    ):
-        intent = "log_food"
-        confidence = 0.78
-    elif any(token in text for token in ["体重", "体脂", "腰围", "胸围"]) or any(
-        token in lowered for token in ["weight", "body fat", "waist"]
-    ):
-        intent = "log_measurement"
-        confidence = 0.78
-    else:
-        intent = "chat"
-        confidence = 0.5
-
     return {
         **state,
-        "detected_intent": intent,
-        "intent_confidence": confidence,
+        "detected_intent": heuristic_intent,
+        "intent_confidence": heuristic_confidence,
         "entry_date": _date_hint(text),
     }
 

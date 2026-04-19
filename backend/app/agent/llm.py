@@ -25,6 +25,8 @@ def get_chat_model() -> BaseChatModel | None:
             api_key=settings.openai_api_key,
             base_url=settings.openai_base_url,
             temperature=0.2,
+            timeout=settings.openai_timeout_seconds,
+            max_retries=1,
         )
 
     if settings.gemini_api_key:
@@ -35,4 +37,3 @@ def get_chat_model() -> BaseChatModel | None:
         )
 
     return None
-
