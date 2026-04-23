@@ -92,9 +92,9 @@ Copy-Item backend\.env.example .env
 常用配置如下：
 
 ```env
-OPENAI_API_KEY=
-OPENAI_BASE_URL=https://api.openai.com/v1
-OPENAI_MODEL=gpt-4o-mini
+OPENAI_API_KEY=your_dashscope_api_key
+OPENAI_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+OPENAI_MODEL=qwen3.6-35b-a3b
 
 GEMINI_API_KEY=
 GEMINI_MODEL=gemini-2.5-flash
@@ -106,7 +106,10 @@ SPARKY_UPLOAD_DIR=../uploads
 
 说明：
 
-- `DEFAULT_AI_PROVIDER` 可设置为 `openai` 或 `gemini`。
+- 项目通过 `langchain-openai` 调用 DashScope 的 OpenAI-compatible endpoint，所以变量名仍然使用 `OPENAI_*`。
+- `OPENAI_BASE_URL` 指向阿里云 DashScope 兼容模式地址。
+- `OPENAI_MODEL` 当前使用 `qwen3.6-35b-a3b`。
+- `DEFAULT_AI_PROVIDER` 保持为 `openai`，表示走 OpenAI-compatible 客户端；不是必须使用 OpenAI 官方 API。
 - `SPARKY_DATABASE_PATH` 默认指向项目根目录的 `fitness.sqlite`。
 - `SPARKY_UPLOAD_DIR` 默认指向项目根目录的 `uploads/`。
 - 不要提交真实 API Key。

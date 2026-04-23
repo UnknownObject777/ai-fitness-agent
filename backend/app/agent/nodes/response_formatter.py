@@ -1,10 +1,12 @@
+from typing import Any
+
 from app.agent.state import AgentState
 
 
 async def response_formatter_node(state: AgentState) -> AgentState:
-    intent = state.get("detected_intent") or "chat"
     data = state.get("structured_data") or {}
-    payload = {
+    intent = _infer_intent(data)
+    payload: dict[str, Any] = {
         "success": True,
         "response": state.get("ai_response") or "",
         "intent": intent,
@@ -12,8 +14,6 @@ async def response_formatter_node(state: AgentState) -> AgentState:
     }
     if state.get("entry_date"):
         payload["entryDate"] = state["entry_date"]
-    if state.get("profile_update"):
-        payload["profile_update"] = state["profile_update"]
 
     if intent == "log_food_multi":
         payload.update(
@@ -27,3 +27,18 @@ async def response_formatter_node(state: AgentState) -> AgentState:
 
     return {**state, "response_payload": payload}
 
+
+def _infer_intent(data: dict[str, Any]) -> str:
+    if "exercises" in data or "training_volume" in data:
+        return "log_strength_workout"
+    if "food_name" in data or "calories" in data:
+        return "log_food"
+    if "weekly_templates" in data or "plan_metadata" in data:
+        return "generate_workout_plan"
+    if "measurements" in data or "weight_kg" in data:
+        return "log_measurement"
+    if "items" in data and "total" in data:
+        return "log_food_multi"
+    if "exercise_name" in data and "duration_minutes" in data:
+        return "log_exercise"
+    return "chat"
