@@ -22,11 +22,14 @@ async def context_builder_node(state: AgentState) -> AgentState:
             messages.append(HumanMessage(content=content))
         # assistant messages are added by the supervisor agent
 
+    formatted_prompt = format_context_as_system_prompt(context)
+
     return {
         **state,
         "semantic_memory": context.semantic_memory.model_dump(by_alias=True),
         "episodic_memory": context.recent_episodes,
         "working_memory": context.working_memory.model_dump(by_alias=True),
-        "memory_prompt": format_context_as_system_prompt(context),
+        "memory_prompt": formatted_prompt,
+        "context_sections": getattr(context, "context_sections", {"legacy": formatted_prompt}),
         "messages": messages,
     }

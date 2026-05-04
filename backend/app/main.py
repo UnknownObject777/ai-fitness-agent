@@ -8,6 +8,7 @@ from app.api.analysis import router as analysis_router
 from app.api.chat import router as chat_router
 from app.api.dictionary import router as dictionary_router
 from app.api.memory import router as memory_router
+from app.api.plans import router as plans_router
 from app.api.records import router as records_router
 from app.api.sessions import router as sessions_router
 from app.api.uploads import router as uploads_router
@@ -46,6 +47,7 @@ app.include_router(memory_router, prefix="/api")
 app.include_router(uploads_router, prefix="/api")
 app.include_router(analysis_router, prefix="/api/analysis")
 app.include_router(dictionary_router, prefix="/api")
+app.include_router(plans_router, prefix="/api")
 
 
 @app.get("/health")

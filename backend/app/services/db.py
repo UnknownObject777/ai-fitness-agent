@@ -128,6 +128,100 @@ async def init_db() -> None:
               memory_json TEXT NOT NULL,
               updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
+
+            CREATE TABLE IF NOT EXISTS workout_session_records (
+              id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL,
+              started_at DATETIME NOT NULL,
+              workout_type TEXT NOT NULL,
+              source TEXT DEFAULT 'agent',
+              raw_json TEXT NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS set_records (
+              id TEXT PRIMARY KEY,
+              workout_record_id TEXT NOT NULL,
+              user_id TEXT NOT NULL,
+              exercise_name TEXT NOT NULL,
+              set_number INTEGER NOT NULL,
+              weight_kg REAL,
+              reps INTEGER,
+              rpe REAL,
+              completed INTEGER DEFAULT 1,
+              raw_json TEXT NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              FOREIGN KEY(workout_record_id) REFERENCES workout_session_records(id)
+            );
+
+            CREATE TABLE IF NOT EXISTS biometric_events (
+              id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL,
+              event_type TEXT NOT NULL,
+              captured_at DATETIME NOT NULL,
+              value_json TEXT NOT NULL,
+              source TEXT DEFAULT 'manual',
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS injury_events (
+              id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL,
+              occurred_at DATETIME NOT NULL,
+              body_region TEXT NOT NULL,
+              severity REAL NOT NULL,
+              note TEXT NOT NULL,
+              raw_json TEXT NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS weekly_plan_records (
+              id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL,
+              plan_json TEXT NOT NULL,
+              status TEXT NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              confirmed_at DATETIME
+            );
+
+            CREATE TABLE IF NOT EXISTS progress_records (
+              id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL,
+              parent_plan_id TEXT,
+              progress_json TEXT NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE INDEX IF NOT EXISTS idx_set_records_user_exercise_created
+              ON set_records(user_id, exercise_name, created_at);
+
+            CREATE INDEX IF NOT EXISTS idx_injury_events_user_severity
+              ON injury_events(user_id, severity, occurred_at);
+
+            CREATE TABLE IF NOT EXISTS user_procedural_memory (
+              user_id TEXT PRIMARY KEY,
+              memory_json TEXT NOT NULL,
+              updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS feedback_signals (
+              id TEXT PRIMARY KEY,
+              user_id TEXT NOT NULL,
+              plan_id TEXT,
+              signal TEXT NOT NULL,
+              score REAL NOT NULL,
+              metadata_json TEXT NOT NULL,
+              created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
+            CREATE TABLE IF NOT EXISTS observation_events (
+              id TEXT PRIMARY KEY,
+              span_type TEXT NOT NULL,
+              event_type TEXT NOT NULL,
+              metadata_json TEXT NOT NULL,
+              started_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+              ended_at DATETIME
+            );
             """
         )
         await ensure_chat_session_columns(db)

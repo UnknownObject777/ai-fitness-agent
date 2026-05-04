@@ -14,8 +14,6 @@ from app.services import db
 async def client(tmp_path, monkeypatch):
     monkeypatch.setenv("SPARKY_DATABASE_PATH", str(tmp_path / "fitness.sqlite"))
     monkeypatch.setenv("SPARKY_UPLOAD_DIR", str(tmp_path / "uploads"))
-    monkeypatch.setenv("OPENAI_API_KEY", "")
-    monkeypatch.setenv("GEMINI_API_KEY", "")
     get_settings.cache_clear()
     get_chat_model.cache_clear()
     get_agent_graph.cache_clear()
@@ -70,3 +68,46 @@ async def test_upload_image_route(client):
     assert response.status_code == 200
     assert payload["success"] is True
     assert payload["imageUrl"].startswith("/uploads/")
+
+
+async def test_plan_preview_blocks_unsafe_payload(client):
+    response = await client.post(
+        "/api/plans/preview",
+        json={
+            "userId": "user_1",
+            "plan": {
+                "goal": "fat_loss",
+                "days": 5,
+                "sessions": [
+                    {"day": "Monday", "type": "strength", "duration": 45, "rpeTarget": 9.5}
+                ],
+            },
+            "state": {
+                "profile": {
+                    "static": {"trainingExperience": "beginner"},
+                    "dynamic": {"weeklyFatigue": 0.2}
+                }
+            },
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["success"] is True
+    assert payload["data"]["safety"]["allowed"] is False
+
+
+async def test_plan_feedback_records_signal(client):
+    response = await client.post(
+        "/api/plans/feedback",
+        json={
+            "userId": "user_1",
+            "planId": "plan_1",
+            "signal": "completed",
+            "score": 0.9,
+            "communicationStyle": "concise_coaching",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.json()["success"] is True

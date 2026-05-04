@@ -9,8 +9,6 @@ from app.services import db
 @pytest.fixture(autouse=True)
 async def isolated_db(tmp_path, monkeypatch):
     monkeypatch.setenv("SPARKY_DATABASE_PATH", str(tmp_path / "fitness.sqlite"))
-    monkeypatch.setenv("OPENAI_API_KEY", "")
-    monkeypatch.setenv("GEMINI_API_KEY", "")
     get_settings.cache_clear()
     get_chat_model.cache_clear()
     get_agent_graph.cache_clear()
@@ -72,3 +70,31 @@ async def test_graph_routes_planner():
     payload = result["response_payload"]
     assert payload["intent"] == "generate_workout_plan"
     assert payload["data"]["weekly_templates"]
+
+
+from app.agent.bridges.router import route_modality
+from app.agent.nodes.supervisor_agent import SYSTEM_PROMPT_TEMPLATE
+from app.agent.nodes.memory_updater import _infer_intent
+
+
+def test_supervisor_prompt_contains_safety_first_constraints():
+    assert "SafetyGuard" in SYSTEM_PROMPT_TEMPLATE
+    assert "Medical contraindications" in SYSTEM_PROMPT_TEMPLATE
+    assert "never override" in SYSTEM_PROMPT_TEMPLATE
+
+
+def test_image_food_route_is_available_to_tool_executor():
+    assert route_modality(True, False, "帮我识别午餐照片") == "nutrition_image"
+
+
+def test_memory_updater_infers_plan_intent_from_plan_execution():
+    intent = _infer_intent(
+        {
+            "plan_execution": {
+                "plan": {"goal": "fat_loss", "sessions": []},
+                "safety": {"allowed": True},
+            }
+        }
+    )
+
+    assert intent == "generate_workout_plan"

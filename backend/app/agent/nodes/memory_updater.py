@@ -19,6 +19,26 @@ async def memory_updater_node(state: AgentState) -> AgentState:
     )
     await add_chat_message(session_id, "assistant", response, None, intent, data)
 
+    # Distill strength events into semantic memory
+    if intent == "log_strength_workout" and isinstance(data.get("exercises"), list):
+        from app.models.memory import SemanticMemory
+        from app.services.memory import get_or_init_semantic_memory, save_semantic_memory
+        from app.services.semantic_distiller import distill_strength_event
+
+        semantic = SemanticMemory.model_validate(await get_or_init_semantic_memory("user_1"))
+        for exercise in data.get("exercises") or []:
+            for set_item in exercise.get("sets") or []:
+                semantic = distill_strength_event(
+                    semantic,
+                    {
+                        "exerciseName": exercise.get("name") or exercise.get("exercise_name"),
+                        "weightKg": set_item.get("weight") or set_item.get("weight_kg"),
+                        "reps": set_item.get("reps"),
+                        "rpe": set_item.get("rpe"),
+                    },
+                )
+        await save_semantic_memory("user_1", semantic.model_dump(by_alias=True))
+
     # Try to extract profile updates from tool results
     messages = state.get("messages", [])
     for msg in reversed(messages):
@@ -38,6 +58,8 @@ async def memory_updater_node(state: AgentState) -> AgentState:
 
 
 def _infer_intent(state: AgentState) -> str:
+    if state.get("plan_execution"):
+        return "generate_workout_plan"
     data = state.get("structured_data", {})
     if not data:
         return "chat"

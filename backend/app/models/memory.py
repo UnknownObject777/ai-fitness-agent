@@ -38,6 +38,13 @@ class SemanticMemory(BaseModel):
     user_profile: UserProfile = Field(default_factory=UserProfile, alias="userProfile")
     strength_model: dict[str, Any] = Field(default_factory=dict, alias="strengthModel")
     weekly_training_stats: dict[str, Any] = Field(default_factory=dict, alias="weeklyTrainingStats")
+    preference_model: dict[str, Any] = Field(default_factory=dict, alias="preferenceModel")
+    recovery_pattern: dict[str, Any] = Field(default_factory=dict, alias="recoveryPattern")
+    injury_risk_profile: dict[str, Any] = Field(
+        default_factory=lambda: {"rules": [], "lastReviewedAt": None},
+        alias="injuryRiskProfile",
+    )
+    procedural_refs: dict[str, Any] = Field(default_factory=dict, alias="proceduralRefs")
     updated_at: str = Field(
         default_factory=lambda: datetime.now(UTC).isoformat(),
         alias="updatedAt",

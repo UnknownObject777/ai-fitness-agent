@@ -38,6 +38,13 @@ class AgentState(TypedDict, total=False):
     profile_update: dict[str, Any] | None# 用户档案更新内容
     entry_date: str | None               # 记录日期（today / yesterday / YYYY-MM-DD）
 
+    # ---- 健身会话与计划执行 ----
+    fitness_session_state: dict[str, Any]  # FitnessSessionState 序列化
+    context_sections: dict[str, Any]       # 三层预算化上下文（system/session/dynamic）
+    modality_route: str                    # 多模态路由结果（text/nutrition_image/video_analysis）
+    plan_execution: dict[str, Any]         # 结构化训练计划执行结果
+    safety_issues: list[dict[str, Any]]    # SafetyGuard 检测到的安全问题
+
     # ---- 输出层 ----
     ai_response: str                     # LLM 最终回复文本
     response_payload: dict[str, Any]     # 格式化后的 API 响应体（返回给前端）

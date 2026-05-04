@@ -471,3 +471,9 @@ TOOLS = [
 ]
 
 TOOLS_BY_NAME = {t.name: t for t in TOOLS}
+
+
+from app.agent.tools.registry import build_fitness_tool_registry
+
+FITNESS_TOOL_REGISTRY = build_fitness_tool_registry()
+FITNESS_TOOL_SCHEMAS = FITNESS_TOOL_REGISTRY.json_schema()
