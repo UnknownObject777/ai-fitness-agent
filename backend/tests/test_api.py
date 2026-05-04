@@ -14,6 +14,8 @@ from app.services import db
 async def client(tmp_path, monkeypatch):
     monkeypatch.setenv("SPARKY_DATABASE_PATH", str(tmp_path / "fitness.sqlite"))
     monkeypatch.setenv("SPARKY_UPLOAD_DIR", str(tmp_path / "uploads"))
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    monkeypatch.setenv("GEMINI_API_KEY", "")
     get_settings.cache_clear()
     get_chat_model.cache_clear()
     get_agent_graph.cache_clear()

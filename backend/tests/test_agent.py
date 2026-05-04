@@ -9,6 +9,8 @@ from app.services import db
 @pytest.fixture(autouse=True)
 async def isolated_db(tmp_path, monkeypatch):
     monkeypatch.setenv("SPARKY_DATABASE_PATH", str(tmp_path / "fitness.sqlite"))
+    monkeypatch.setenv("OPENAI_API_KEY", "")
+    monkeypatch.setenv("GEMINI_API_KEY", "")
     get_settings.cache_clear()
     get_chat_model.cache_clear()
     get_agent_graph.cache_clear()

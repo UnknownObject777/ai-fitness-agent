@@ -7,6 +7,7 @@ Supervisor Agent 节点：LangGraph ReAct 循环的决策核心
 3. 调用 LLM 并判断：
    - 若返回 tool_calls → 进入 tool_executor 节点，等待工具执行结果后再次循环
    - 若无 tool_calls → 视为最终回答，进入 memory_updater 节点
+4. LLM 不可用时，使用确定性关键词匹配路由到对应提取工具（离线兜底）
 
 多轮循环示例：
   supervisor(用户说"深蹲80kg") → tool_calls=[extract_workout_data]
@@ -16,9 +17,11 @@ Supervisor Agent 节点：LangGraph ReAct 循环的决策核心
   supervisor(看到保存成功) → 无 tool_calls，输出最终回复
 """
 
+import re
 from typing import Any
+from uuid import uuid4
 
-from langchain_core.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 
 from app.agent.llm import get_chat_model
 from app.agent.state import AgentState
@@ -84,17 +87,145 @@ def _format_memory_context(state: AgentState) -> str:
     return "\n### User Memory\nNo memory available yet.\n"
 
 
+# ---- 确定性意图检测（LLM 不可用时的离线兜底路由） ----
+
+_STRENGTH_KEYWORDS = re.compile(
+    r"(?:卧推|深蹲|硬拉|划船|推举|弯举|飞鸟|卧推|肩推|"
+    r"bench|squat|deadlift|row|press|curl|fly|"
+    r"\d+\s*[xX*×]\s*\d+|\d+\s*(?:kg|公斤|组|sets?))",
+    re.IGNORECASE,
+)
+_MEASUREMENT_KEYWORDS = re.compile(
+    r"(?:体重|体脂|身高|腰围|胸围|bmi|weight\s*(?:kg)?|body\s*fat)",
+    re.IGNORECASE,
+)
+_NUTRITION_KEYWORDS = re.compile(
+    r"(?:吃了|吃了|喝了|餐|饭|食物|卡路里|热量|kcal|蛋白质|碳水|"
+    r"早餐|午餐|晚餐|加餐|零食|ate|food|meal|snack)",
+    re.IGNORECASE,
+)
+_PLAN_KEYWORDS = re.compile(
+    r"(?:训练计划|健身计划|减脂计划|增肌计划|周计划|"
+    r"workout\s*plan|training\s*plan|program|计划)",
+    re.IGNORECASE,
+)
+_EXERCISE_KEYWORDS = re.compile(
+    r"(?:跑步|游泳|骑行|跳绳|有氧|步行|"
+    r"run|swim|bike|jog|cardio|walk)",
+    re.IGNORECASE,
+)
+
+
+def _detect_intent_from_text(text: str) -> str:
+    """从用户消息中确定性地推断意图，用于 LLM 不可用时的路由。"""
+    if _STRENGTH_KEYWORDS.search(text):
+        return "log_strength_workout"
+    if _MEASUREMENT_KEYWORDS.search(text):
+        return "log_measurement"
+    if _PLAN_KEYWORDS.search(text):
+        return "generate_workout_plan"
+    if _NUTRITION_KEYWORDS.search(text):
+        return "log_food"
+    if _EXERCISE_KEYWORDS.search(text):
+        return "log_exercise"
+    return "chat"
+
+
+def _build_fallback_tool_calls(state: AgentState) -> list[dict[str, Any]] | None:
+    """LLM 不可用时，根据关键词匹配构造确定性 tool_calls。"""
+    user_message = state.get("user_message", "")
+    base64_image = state.get("base64_image")
+    intent = _detect_intent_from_text(user_message)
+
+    if intent == "log_strength_workout" or intent == "log_measurement":
+        return [
+            {
+                "name": "extract_workout_data",
+                "args": {"intent": intent, "user_message": user_message},
+                "id": f"call_{uuid4().hex[:8]}",
+                "type": "tool_call",
+            }
+        ]
+
+    if intent == "log_food":
+        if base64_image:
+            return [
+                {
+                    "name": "analyze_food_image",
+                    "args": {"image_url": base64_image, "user_message": user_message},
+                    "id": f"call_{uuid4().hex[:8]}",
+                    "type": "tool_call",
+                }
+            ]
+        return [
+            {
+                "name": "extract_nutrition_data",
+                "args": {"user_message": user_message},
+                "id": f"call_{uuid4().hex[:8]}",
+                "type": "tool_call",
+            }
+        ]
+
+    if intent == "generate_workout_plan":
+        return [
+            {
+                "name": "extract_plan_data",
+                "args": {"intent": intent, "user_message": user_message},
+                "id": f"call_{uuid4().hex[:8]}",
+                "type": "tool_call",
+            }
+        ]
+
+    if intent == "log_exercise":
+        return [
+            {
+                "name": "extract_workout_data",
+                "args": {"intent": intent, "user_message": user_message},
+                "id": f"call_{uuid4().hex[:8]}",
+                "type": "tool_call",
+            }
+        ]
+
+    # 图片且无明确食物意图 → 尝试图片识别
+    if base64_image:
+        return [
+            {
+                "name": "analyze_food_image",
+                "args": {"image_url": base64_image, "user_message": user_message or "识别这张图片"},
+                "id": f"call_{uuid4().hex[:8]}",
+                "type": "tool_call",
+            }
+        ]
+
+    return None
+
+
 async def supervisor_agent_node(state: AgentState) -> AgentState:
     """Supervisor 主节点：调用 LLM 并决定下一步路由。"""
     model = get_chat_model()
-    if model is None:
-        return _no_model_response(state)
 
     messages = state.get("messages", [])
+    user_message = state.get("user_message", "")
+
+    # ---- LLM 不可用时的确定性兜底路由 ----
+    if model is None:
+        # 若最后一条消息是 ToolMessage，说明工具已执行完毕，直接结束
+        last_msg = messages[-1] if messages else None
+        if isinstance(last_msg, ToolMessage):
+            return _no_model_response(state)
+
+        tool_calls = _build_fallback_tool_calls(state)
+        if tool_calls:
+            response = AIMessage(content="", tool_calls=tool_calls)
+            return {
+                **state,
+                "messages": list(messages) + [response],
+            }
+        return _no_model_response(state)
+
     if not messages:
         return _no_model_response(state)
 
-    user_message = state.get("user_message", "")
     memory_context = _format_memory_context(state)
 
     # 构建系统提示
@@ -118,6 +249,14 @@ async def supervisor_agent_node(state: AgentState) -> AgentState:
     try:
         response: AIMessage = await bound_model.ainvoke(conversation)
     except Exception:
+        # LLM 调用失败 → 也走确定性兜底
+        tool_calls = _build_fallback_tool_calls(state)
+        if tool_calls:
+            fallback_response = AIMessage(content="", tool_calls=tool_calls)
+            return {
+                **state,
+                "messages": list(messages) + [fallback_response],
+            }
         return _no_model_response(state)
 
     # 将 LLM 的回复追加到 messages 中，供后续节点使用
@@ -136,10 +275,10 @@ async def supervisor_agent_node(state: AgentState) -> AgentState:
 
 
 def _no_model_response(state: AgentState) -> AgentState:
-    """LLM 不可用时的兜底回复。"""
+    """LLM 不可用且无法确定性路由时的兜底回复。"""
     return {
         **state,
         "ai_response": "我在。你可以告诉我今天的训练、饮食、体测，或者让我帮你调整接下来的计划。",
-        "structured_data": {},
+        "structured_data": state.get("structured_data", {}),
         "messages": state.get("messages", []),
     }

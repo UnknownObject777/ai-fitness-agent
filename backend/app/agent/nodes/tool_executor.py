@@ -59,7 +59,7 @@ async def tool_executor_node(state: AgentState) -> AgentState:
                     result = {"error": str(e)}
 
         # 追踪提取类工具的结果，用于后续 structured_data 回填
-        if tool_name in {"extract_workout_data", "extract_nutrition_data", "extract_plan_data"}:
+        if tool_name in {"extract_workout_data", "extract_nutrition_data", "extract_plan_data", "analyze_food_image"}:
             if isinstance(result, dict):
                 has_extraction = True
                 tool_call_results[tool_name] = result
@@ -80,7 +80,7 @@ async def tool_executor_node(state: AgentState) -> AgentState:
     # 合并提取数据到 structured_data，供前端展示和保存
     structured_data = dict(state.get("structured_data") or {})
     for tool_name, result in tool_call_results.items():
-        if tool_name in {"extract_workout_data", "extract_nutrition_data", "extract_plan_data"} and "data" in result:
+        if tool_name in {"extract_workout_data", "extract_nutrition_data", "extract_plan_data", "analyze_food_image"} and "data" in result:
             structured_data = result["data"]
 
     return {
